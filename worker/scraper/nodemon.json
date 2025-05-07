@@ -1,0 +1,15 @@
+{
+  "watch": ["server.ts", "src/collections/**/*.ts"],
+  "exec": "ts-node src/app.ts",
+  "ignore": [
+    ".git",
+    "node_modules",
+    "dist",
+    "package-lock.json",
+    "package.json",
+    "README.md",
+    "tsconfig.json"
+  ],
+  "ext": "ts js",
+  "stdin": false
+}
