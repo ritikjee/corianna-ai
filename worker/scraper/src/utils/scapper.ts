@@ -129,17 +129,23 @@ export class Scapper {
     ): Promise<Array<string>> {
         const visited = new Set<string>()
         const queue: string[] = [startUrl]
+        // Create a set to track URLs that are already in the queue
+        const inQueue = new Set<string>([startUrl])
 
         while (queue.length > 0) {
             const url = queue.shift()!
+            // Remove from inQueue set as we're processing it now
+            inQueue.delete(url)
+
             if (visited.has(url)) continue
             visited.add(url)
 
             try {
                 const internalLinks = await Scapper.extractLinks(url)
                 for (const link of internalLinks) {
-                    if (!visited.has(link)) {
+                    if (!visited.has(link) && !inQueue.has(link)) {
                         queue.push(link)
+                        inQueue.add(link)
                     }
                 }
             } catch (e) {
