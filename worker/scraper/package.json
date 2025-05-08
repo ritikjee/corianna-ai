@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.26.0",
+    "@types/amqplib": "^0.10.7",
     "eslint": "^9.26.0",
     "nodemon": "^3.1.10",
     "prettier": "^3.5.3",
@@ -28,8 +29,11 @@
     "typescript-eslint": "^8.32.0"
   },
   "dependencies": {
+    "@google/genai": "^0.12.0",
+    "amqplib": "^0.10.8",
     "axios": "^1.9.0",
     "cheerio": "^1.0.0",
+    "dotenv": "^16.5.0",
     "kafkajs": "^2.2.4"
   }
 }

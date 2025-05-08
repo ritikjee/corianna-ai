@@ -1,7 +1,12 @@
-import { fetcher } from './fetcher'
+import { ContentEmbedding } from '@google/genai'
 import * as cheerio from 'cheerio'
+import { fetcher } from '../utils/fetcher'
+import { googleGenAI } from '../utils/gemini'
+import { Kafka } from './kafka'
 
-export class Scapper {
+export class ProcessData {
+    private static kafka = new Kafka([process.env.KAFKA_BROKER_URL as string])
+
     private static estimateTokenCount = (text: string) =>
         Math.ceil(text.length / 4)
 
@@ -12,7 +17,7 @@ export class Scapper {
         let tokenCount = 0
 
         for (const word of words) {
-            const wordTokenCount = Scapper.estimateTokenCount(word + ' ')
+            const wordTokenCount = ProcessData.estimateTokenCount(word + ' ')
             if (tokenCount + wordTokenCount > tokenLimit) {
                 chunks.push(currentChunk.join(' '))
                 currentChunk = []
@@ -28,40 +33,7 @@ export class Scapper {
 
         return chunks
     }
-
-    private static normalizeUrl = (
-        href: string,
-        base: string
-    ): string | null => {
-        try {
-            const baseUrl = new URL(base)
-            if (!href || href.startsWith('#') || href.startsWith('javascript:'))
-                return null
-            const cleanHref = href.split('?')[0].split('#')[0]
-            const fullUrl = new URL(cleanHref, baseUrl)
-            return fullUrl.origin === baseUrl.origin ? fullUrl.href : null
-        } catch {
-            return null
-        }
-    }
-
-    private static async extractLinks(url: string): Promise<string[]> {
-        const { data, error } = await fetcher<string>({ url, method: 'GET' })
-        if (error || !data) return []
-
-        const $ = cheerio.load(data)
-        const links = new Set<string>()
-
-        $('a[href]').each((_, el) => {
-            const rawHref = $(el).attr('href')?.trim()
-            const normalized = Scapper.normalizeUrl(rawHref || '', url)
-            if (normalized) links.add(normalized)
-        })
-
-        return Array.from(links)
-    }
-
-    static async scrapeWebsite(url: string, token_limit: number) {
+    private static async scrapeWebsite(url: string, token_limit: number) {
         const { data, error } = await fetcher<string>({
             url,
             method: 'GET',
@@ -117,42 +89,91 @@ export class Scapper {
         $body.children().each((_, el) => extractText(el))
 
         const fullText = textBlocks.join(' ').replace(/\s+/g, ' ')
-        const chunks = Scapper.chunkText(fullText, token_limit)
+        const chunks = ProcessData.chunkText(fullText, token_limit)
 
         return {
             title,
             chunks,
         }
     }
-    static async crawlAllInternalLinks(
-        startUrl: string
-    ): Promise<Array<string>> {
-        const visited = new Set<string>()
-        const queue: string[] = [startUrl]
-        // Create a set to track URLs that are already in the queue
-        const inQueue = new Set<string>([startUrl])
 
-        while (queue.length > 0) {
-            const url = queue.shift()!
-            // Remove from inQueue set as we're processing it now
-            inQueue.delete(url)
+    private static async generateEmbeddings(
+        chunks: string[],
+        url: string,
+        websiteId: string,
+        baseSectionNo: number = 0
+    ) {
+        const embeddingsResults: {
+            metadata: { url: string; websiteId: string; sectionNo: number }
+            embedding: ContentEmbedding[] | undefined
+        }[] = []
 
-            if (visited.has(url)) continue
-            visited.add(url)
+        const RATE_LIMIT = 4
+        const INTERVAL = 60000 / RATE_LIMIT
 
-            try {
-                const internalLinks = await Scapper.extractLinks(url)
-                for (const link of internalLinks) {
-                    if (!visited.has(link) && !inQueue.has(link)) {
-                        queue.push(link)
-                        inQueue.add(link)
-                    }
+        try {
+            for (let i = 0; i < chunks.length; i++) {
+                const chunk = chunks[i]
+                const response = await googleGenAI.models.embedContent({
+                    model: 'gemini-embedding-exp-03-07',
+                    contents: chunk,
+                })
+
+                embeddingsResults.push({
+                    metadata: {
+                        url,
+                        websiteId,
+                        sectionNo: baseSectionNo + i,
+                    },
+                    embedding: response.embeddings,
+                })
+
+                // Avoid unnecessary delay after the last request
+                if (i < chunks.length - 1) {
+                    await new Promise((resolve) =>
+                        setTimeout(resolve, INTERVAL)
+                    )
                 }
-            } catch (e) {
-                console.warn(`Failed to crawl ${url}:`, e)
             }
+
+            return embeddingsResults
+        } catch (error) {
+            console.error('Error generating embeddings:', error)
+            throw error
+        }
+    }
+
+    static async scrapeAndEmbed(
+        url: string,
+        tokenLimit: number,
+        websiteId: string
+    ) {
+        const scrapedData = await this.scrapeWebsite(url, tokenLimit)
+
+        if (!scrapedData) {
+            return null
         }
 
-        return Array.from(visited)
+        const embeddedChunks = await this.generateEmbeddings(
+            scrapedData.chunks,
+            url,
+            websiteId
+        )
+
+        if (!embeddedChunks) {
+            return null
+        }
+
+        await this.kafka.connect()
+
+        await this.kafka.sendMessagesInBatches(embeddedChunks)
+
+        await this.kafka.disconnect()
+        console.log('Data sent to Kafka successfully')
+
+        return {
+            websiteId,
+            url,
+        }
     }
 }
