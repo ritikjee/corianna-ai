@@ -42,6 +42,17 @@ services:
       - corianna_network
     restart: unless-stopped
 
+  chromadb:
+    image: chromadb/chroma
+    container_name: chromadb_container
+    volumes:
+      - chroma_data:/data
+    ports:
+      - "8000:8000"
+    networks:
+      - corianna_network
+    restart: unless-stopped
+
 networks:
   corianna_network:
     driver: bridge
@@ -49,4 +60,4 @@ networks:
 volumes:
   zookeeper_data:
   kafka_data:
-    
+  chroma_data:
