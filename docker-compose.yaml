@@ -53,6 +53,57 @@ services:
       - corianna_network
     restart: unless-stopped
 
+  postgres:
+    container_name: postgres_container
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /data/postgres
+    volumes:
+      - postgres_data:/data/postgres
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - corianna_network
+    restart: unless-stopped
+
+  pgadmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    networks:
+      - corianna_network
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  redis:
+    container_name: redis_container
+    image: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - corianna_network
+    restart: unless-stopped
+
+  redis_insights:
+    container_name: redis_insights_container
+    image: redis/redisinsight
+    ports:
+      - "5540:5540"
+    networks:
+      - corianna_network
+    restart: unless-stopped
+
 networks:
   corianna_network:
     driver: bridge
@@ -61,3 +112,5 @@ volumes:
   zookeeper_data:
   kafka_data:
   chroma_data:
+  postgres_data:
+  pgadmin_data:

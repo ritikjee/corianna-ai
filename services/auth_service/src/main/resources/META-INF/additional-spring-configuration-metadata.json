@@ -1,0 +1,19 @@
+{
+  "properties": [
+    {
+      "name": "jwt.secret.access-token",
+      "type": "java.lang.String",
+      "description": "Secret key used to sign and validate JWT access tokens. Keep this value secure and unique."
+    },
+    {
+      "name": "jwt.secret.refresh-token",
+      "type": "java.lang.String",
+      "description": "Secret key used to sign and validate JWT refresh tokens. Should differ from the access token secret for enhanced security."
+    },
+    {
+      "name": "jwt.secret.otp_secret",
+      "type": "java.lang.String",
+      "description": "Secret key used to sign and validate JWT refresh tokens for otp validation. Should differ from the access token secret for enhanced security."
+    }
+  ]
+}
