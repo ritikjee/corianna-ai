@@ -40,8 +40,10 @@ public class JwtConfig {
 
             return claims;
         } catch (ExpiredJwtException e) {
+            System.out.println("Token expired: " + e.getMessage());
             return null;
         } catch (JwtException e) {
+            System.out.println("Invalid token: " + e.getMessage());
             return null;
         }
     }

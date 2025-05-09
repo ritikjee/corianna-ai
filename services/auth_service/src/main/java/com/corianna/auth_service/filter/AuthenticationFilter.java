@@ -6,6 +6,9 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -59,7 +62,13 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             for (Cookie cookie : cookies) {
                 if (cookie.getName().equals(CookieNames.ACCESS_TOKEN_NAME)) {
                     token = cookie.getValue();
-                    break;
+                }
+                if (cookie.getName().equals(CookieNames.REFRESH_TOKEN_NAME)) {
+                    request.setAttribute("refresh-token", cookie.getValue());
+                    if (URI.startsWith("/api/token/refresh")) {
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
                 }
             }
 
@@ -88,6 +97,15 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                 sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Session Expired", URI);
                 return;
             }
+
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                        claims.get("email"), null, null);
+                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            }
+
+            request.setAttribute("user", claims);
 
             filterChain.doFilter(request, response);
         } catch (Exception e) {

@@ -1,10 +1,12 @@
 package com.corianna.auth_service.controllers;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.corianna.auth_service.constants.CookieNames;
@@ -53,16 +55,22 @@ public class AuthController {
 
         try {
             Device device = authService.login(input.email(), input.password(), request.getRemoteAddr(), userAgent);
+            Map<String, Object> userData = new HashMap<>();
+            userData.put("sub", device.getUser().getId());
+            userData.put("email", device.getUser().getEmail());
+            userData.put("sid", device.getSessionId());
 
-            Map<String, Object> userData = Map.of(
-                    "sub", device.getUser().getId(),
-                    "email", device.getUser().getEmail(),
-                    "firstName", device.getUser().getFirstname(),
-                    "lastName", device.getUser().getLastname(),
-                    "image", device.getUser().getImage(),
-                    "sid", device.getSessionId());
+            if (device.getUser().getFirstname() != null) {
+                userData.put("firstName", device.getUser().getFirstname());
+            }
+            if (device.getUser().getLastname() != null) {
+                userData.put("lastName", device.getUser().getLastname());
+            }
+            if (device.getUser().getImage() != null) {
+                userData.put("image", device.getUser().getImage());
+            }
 
-            String refreshToken = jwtConfig.encodeToken(refreshTokenSecret, 30 * 24 * 60 * 60 * 1000, userData);
+            String refreshToken = jwtConfig.encodeToken(refreshTokenSecret, 30L * 24 * 60 * 60 * 1000, userData);
 
             Cookie cookie = new Cookie(CookieNames.REFRESH_TOKEN_NAME, refreshToken);
             cookie.setHttpOnly(true);
@@ -78,8 +86,9 @@ public class AuthController {
             return ResponseEntity.badRequest().body(
                     new ResponseDTO<>(e.getMessage(), 400, null, null, request.getRequestURI()));
         } catch (RuntimeException e) {
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(
-                    new ResponseDTO<>("Email or password is incorrect", 400, null, null, request.getRequestURI()));
+                    new ResponseDTO<>("Email or password is incorrect 1", 400, null, null, request.getRequestURI()));
         } catch (Exception e) {
             LOGGER.error(e.getMessage());
             return ResponseEntity.internalServerError().body(
@@ -117,9 +126,10 @@ public class AuthController {
     }
 
     @PostMapping("/verify-otp")
-    public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> body, HttpServletRequest request) {
+    public ResponseEntity<?> verifyOtp(@RequestParam("state") String state, @RequestParam("otp") String otp,
+            HttpServletRequest request) {
         try {
-            String result = authService.verifyOtp(body.get("state"), body.get("otp"));
+            String result = authService.verifyOtp(state, otp);
             return ResponseEntity.ok().body(
                     new ResponseDTO<>(result, 200, null, null, request.getRequestURI()));
         } catch (RuntimeException e) {
@@ -133,9 +143,9 @@ public class AuthController {
     }
 
     @PostMapping("/resend-otp")
-    public ResponseEntity<?> resendOtp(@RequestBody Map<String, String> body, HttpServletRequest request) {
+    public ResponseEntity<?> resendOtp(@RequestParam("state") String state, HttpServletRequest request) {
         try {
-            String result = authService.resendOTP(body.get("state"));
+            String result = authService.resendOTP(state);
             return ResponseEntity.ok().body(
                     new ResponseDTO<>(result, 200, null, null, request.getRequestURI()));
         } catch (RuntimeException e) {
@@ -149,9 +159,9 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> body, HttpServletRequest request) {
+    public ResponseEntity<?> forgotPassword(@RequestParam("email") String email, HttpServletRequest request) {
         try {
-            String state = authService.forgotPassword(body.get("email"));
+            String state = authService.forgotPassword(email);
             StateOutput stateOutput = new StateOutput(state);
             return ResponseEntity.ok().body(
                     new ResponseDTO<>("OTP sent for password reset", 200, null, stateOutput, request.getRequestURI()));

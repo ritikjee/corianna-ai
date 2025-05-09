@@ -46,7 +46,7 @@ public class AuthService implements UserDetailsService {
     public AuthService(
             UserRepository userRepository,
             @Lazy BCryptPasswordEncoder bCryptPasswordEncoder,
-            AuthenticationManager authenticationManager,
+            @Lazy AuthenticationManager authenticationManager,
             DeviceRepository deviceRepository,
             Parser parser,
             MessageProducer messageProducer,
@@ -104,6 +104,8 @@ public class AuthService implements UserDetailsService {
         Map<String, Object> otpState = Map.of("email", user.getEmail());
 
         String state = jwtConfig.encodeToken(otpSecret, 15 * 60 * 1000, otpState);
+
+        userRepository.save(user);
 
         return state;
     }
@@ -186,7 +188,11 @@ public class AuthService implements UserDetailsService {
     }
 
     public String verifyOtp(String state, String otp) {
-        Map<String, Object> decodedState = jwtConfig.decodeToken(otpSecret, state);
+        Map<String, Object> decodedState = jwtConfig.decodeToken(state, otpSecret);
+
+        if (decodedState == null) {
+            throw new RuntimeException("Invalid OTP state");
+        }
 
         String email = (String) decodedState.get("email");
 
