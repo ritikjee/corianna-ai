@@ -11,6 +11,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class QuestionRequest {
 
+    private String chatId;
     private String question;
 
 }

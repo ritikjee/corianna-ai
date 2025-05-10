@@ -4,13 +4,14 @@ import { Kafka } from './services/kafka'
 import { ProcessData } from './services/process'
 import { RabbitMQ } from './services/rabbitmq'
 import { Scapper } from './services/scapper'
+import { logger } from './utils/logger'
 
 async function main() {
     const rabbitMQUrl = process.env.RABBITMQ_URL as string
     const kafkaBrokerUrl = process.env.KAFKA_BROKER_URL as string
 
     if (!rabbitMQUrl) {
-        console.error('RABBITMQ_URL environment variable is not set.')
+        logger.error('RABBITMQ_URL environment variable is not set.')
         process.exit(1)
     }
 
@@ -20,9 +21,9 @@ async function main() {
     try {
         await rabbitmq.connect()
         await kafka.init()
-        console.log('Connected to RabbitMQ and Kafka')
+        logger.info('Connected to RabbitMQ and Kafka')
     } catch (error) {
-        console.error('Error connecting to RabbitMQ or Kafka:', error)
+        logger.error('Error connecting to RabbitMQ or Kafka:', error)
         process.exit(1)
     }
 

@@ -32,9 +32,22 @@ public class ChatController {
         try {
             String requestId = UUID.randomUUID().toString();
 
+            if (data.getChatId() == null || data.getChatId().isEmpty()) {
+                return ResponseEntity.badRequest().body(
+                        new ApiError(400, "Chat ID is required"));
+            }
+
+            if (data.getQuestion() == null || data.getQuestion().isEmpty()) {
+                return ResponseEntity.badRequest().body(
+                        new ApiError(400, "Question cannot be empty"));
+            }
+
+            System.out.println("RequestId: " + requestId);
+
             messageProducer.sendMessage("chat-questions", new KafkaMessageDTO(
                     requestId,
                     websiteId,
+                    data.getChatId(),
                     data.getQuestion()));
 
             return ResponseEntity.ok().body(

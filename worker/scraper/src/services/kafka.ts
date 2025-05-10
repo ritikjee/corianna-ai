@@ -1,6 +1,7 @@
 import { Admin, Kafka as KafkaJS, Producer } from 'kafkajs'
 import { KAFKA_DEFAULT_TOPIC } from '../constants'
 import { KafkaMessage } from '../types'
+import { logger } from '../utils/logger'
 
 export class Kafka {
     private kafka: KafkaJS
@@ -28,7 +29,7 @@ export class Kafka {
                 topics: [{ topic: KAFKA_DEFAULT_TOPIC, numPartitions: 1 }],
             })
         }
-        console.log('Initialized Kafka topic:', KAFKA_DEFAULT_TOPIC)
+        logger.info(`Kafka topics: ${topics.join(', ')}`)
         await this.admin.disconnect()
     }
 
@@ -62,7 +63,7 @@ export class Kafka {
                     )
                     return // success
                 } catch (error) {
-                    console.error(
+                    logger.error(
                         `Kafka batch send failed (attempt ${attempt}):`,
                         error
                     )

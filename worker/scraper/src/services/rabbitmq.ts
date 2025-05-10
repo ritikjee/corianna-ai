@@ -1,4 +1,5 @@
 import * as amqp from 'amqplib'
+import { logger } from '../utils/logger'
 
 export class RabbitMQ {
     private connection: amqp.ChannelModel | null = null
@@ -12,14 +13,12 @@ export class RabbitMQ {
     async connect() {
         try {
             if (this.connection) {
-                console.log('Already connected to RabbitMQ')
                 return
             }
             this.connection = await amqp.connect(this.url)
             this.channel = await this.connection.createChannel()
-            console.log('Connected to RabbitMQ')
         } catch (error) {
-            console.error('Failed to connect to RabbitMQ:', error)
+            logger.error('Failed to connect to RabbitMQ:', error)
             process.exit(1)
         }
     }
@@ -29,7 +28,7 @@ export class RabbitMQ {
         callback: (msg: amqp.ConsumeMessage) => Promise<void>
     ) {
         if (!this.channel) {
-            console.error('RabbitMQ channel is not initialized')
+            logger.error('RabbitMQ channel is not initialized')
             return
         }
 

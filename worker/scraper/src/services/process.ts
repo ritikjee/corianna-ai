@@ -3,6 +3,7 @@ import * as cheerio from 'cheerio'
 import { fetcher } from '../utils/fetcher'
 import { googleGenAI } from '../utils/gemini'
 import { Kafka } from './kafka'
+import { logger } from '../utils/logger'
 
 export class ProcessData {
     private static kafka = new Kafka([process.env.KAFKA_BROKER_URL as string])
@@ -40,7 +41,7 @@ export class ProcessData {
         })
 
         if (error) {
-            console.error('Error fetching the URL:', error)
+            logger.error('Error fetching the URL:', error)
             return
         }
 
@@ -138,7 +139,7 @@ export class ProcessData {
 
             return embeddingsResults
         } catch (error) {
-            console.error('Error generating embeddings:', error)
+            logger.error('Error generating embeddings:', error)
             throw error
         }
     }
@@ -169,7 +170,6 @@ export class ProcessData {
         await this.kafka.sendMessagesInBatches(embeddedChunks)
 
         await this.kafka.disconnect()
-        console.log('Data sent to Kafka successfully')
 
         return {
             websiteId,

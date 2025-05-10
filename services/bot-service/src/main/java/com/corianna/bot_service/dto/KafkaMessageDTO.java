@@ -13,6 +13,7 @@ public class KafkaMessageDTO {
 
     private String requestId;
     private String websiteId;
+    private String chatId;
     private String question;
 
 }
