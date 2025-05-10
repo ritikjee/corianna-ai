@@ -1,5 +1,7 @@
 import 'dotenv/config'
 
+import pLimit from 'p-limit'
+
 import { Kafka } from './services/kafka'
 import { ProcessData } from './services/process'
 import { RabbitMQ } from './services/rabbitmq'
@@ -74,13 +76,19 @@ async function main() {
 
             const urls = await Scapper.crawlAllInternalLinks(url)
 
-            urls.forEach(async (url) => {
-                await ProcessData.scrapeAndEmbed(
-                    url,
-                    1000,
-                    Math.floor(Math.random() * 1000).toString()
+            const limit = pLimit(5)
+
+            const tasks = urls.map((url) =>
+                limit(() =>
+                    ProcessData.scrapeAndEmbed(
+                        url,
+                        1000,
+                        Math.floor(Math.random() * 1000).toString()
+                    )
                 )
-            })
+            )
+
+            await Promise.all(tasks)
 
             await rabbitmq.ack(msg)
         }

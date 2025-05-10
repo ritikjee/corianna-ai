@@ -1,12 +1,14 @@
 {
-  "name": "corianna-scraper",
+  "name": "ai_worker",
   "version": "1.0.0",
-  "description": "This is web scrapper for corianna AI",
+  "description": "This is AI Worker prosession information from kafka as context, question from bot_service and ChromaDB to give chat output to user",
   "keywords": [
-    "Spring-Boot",
+    "MERN",
+    "SpringBoot",
     "AI",
-    "Typescript",
-    "Chatbot"
+    "Chatbot",
+    "Microservice",
+    "Kafka"
   ],
   "license": "ISC",
   "author": "ritikjee",
@@ -16,11 +18,13 @@
     "dev": "npx nodemon",
     "build": "npx tsc",
     "lint": "npx eslint .",
+    "lint:fix": "npx eslint . --fix",
+    "prettier": "npx prettier --write .",
+    "prettier:check": "npx prettier --check .",
     "start": "node dist/app.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.26.0",
-    "@types/amqplib": "^0.10.7",
     "eslint": "^9.26.0",
     "nodemon": "^3.1.10",
     "prettier": "^3.5.3",
@@ -30,14 +34,11 @@
   },
   "dependencies": {
     "@google/genai": "^0.12.0",
-    "amqplib": "^0.10.8",
-    "axios": "^1.9.0",
-    "cheerio": "^1.0.0",
+    "chromadb": "^2.4.3",
+    "chromadb-default-embed": "^2.14.0",
     "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
     "kafkajs": "^2.2.4",
-    "p-limit": "^6.2.0",
-    "redis": "^5.0.1",
     "winston": "^3.17.0"
   }
 }
