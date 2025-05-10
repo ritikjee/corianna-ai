@@ -39,6 +39,7 @@ export class ChromaDB {
             }
 
             const ids: string[] = []
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const documents: any = []
             const metadatas: KAFKA_MESSAGE_METADATA[] = []
 

@@ -1,19 +1,25 @@
 import winston from 'winston'
-import { isMainThread, threadId } from 'worker_threads'
+import { isMainThread } from 'worker_threads'
 import { format } from 'date-fns'
+import path from 'path'
 
-const springBootFormat = winston.format.printf(
-    ({ level, message, service }) => {
-        const now = new Date()
-        const timestamp = now.toISOString().replace('Z', `${format(now, 'xx')}`)
-        const capitalizedLevel = level.toUpperCase()
-        const processId = process.pid || '75451'
-        const threadName = isMainThread ? 'main' : 'worker'
-        const threadIdValue = threadId || '0'
+const loggerConfig = winston.format.printf(({ level, message, service }) => {
+    const now = new Date()
+    const timestamp = now.toISOString().replace('Z', `${format(now, 'xx')}`)
+    const capitalizedLevel = level.toUpperCase()
+    const processId = process.pid
+    const threadName = isMainThread ? 'main' : 'worker'
 
-        return `${timestamp}  ${capitalizedLevel} ${processId} --- [${service}] [${threadName}] ${threadIdValue}    : ${message}`
-    }
-)
+    // Get the file path from the stack trace
+    const stack = new Error().stack?.split('\n')
+    const callerLine = stack?.[10] || stack?.[3] || '' // adjust based on depth
+    const fileMatch = callerLine.match(/\((.*):(\d+):(\d+)\)/)
+    const filePath = fileMatch
+        ? `${path.basename(fileMatch[1])}:${fileMatch[2]}`
+        : 'unknown'
+
+    return `${timestamp}  ${capitalizedLevel} ${processId} --- [${service}] [${threadName}] [${filePath}] : ${message}`
+})
 
 export const logger = winston.createLogger({
     level: 'info',
@@ -22,8 +28,8 @@ export const logger = winston.createLogger({
         winston.format.metadata({
             fillExcept: ['message', 'level', 'timestamp', 'service'],
         }),
-        springBootFormat
+        loggerConfig
     ),
-    defaultMeta: { service: 'bot-service' },
+    defaultMeta: { service: 'bot-worker' },
     transports: [new winston.transports.Console()],
 })
