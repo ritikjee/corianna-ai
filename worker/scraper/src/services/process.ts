@@ -4,6 +4,8 @@ import { fetcher } from '../utils/fetcher'
 import { googleGenAI } from '../utils/gemini'
 import { Kafka } from './kafka'
 import { logger } from '../utils/logger'
+import { RedisClient } from './redis'
+import { REDIS_RATE_LIMIT_KEY } from '../constants'
 
 export class ProcessData {
     private static kafka = new Kafka([process.env.KAFKA_BROKER_URL as string])
@@ -109,16 +111,33 @@ export class ProcessData {
             embedding: ContentEmbedding[] | undefined
         }[] = []
 
-        const RATE_LIMIT = 4
-        const INTERVAL = 60000 / RATE_LIMIT
+        const redis = new RedisClient(process.env.REDIS_URL as string)
 
         try {
             for (let i = 0; i < chunks.length; i++) {
+                let rate = Number(await redis.get(REDIS_RATE_LIMIT_KEY))
+
+                if (!rate) {
+                    while (!rate) {
+                        logger.info(
+                            'Rate limit reached. Retrying in 2 seconds...'
+                        )
+
+                        await new Promise((resolve) =>
+                            setTimeout(resolve, 5000)
+                        )
+
+                        rate = Number(await redis.get(REDIS_RATE_LIMIT_KEY))
+                    }
+                }
+
                 const chunk = chunks[i]
-                const response = await googleGenAI.models.embedContent({
-                    model: 'gemini-embedding-exp-03-07',
+                const { embeddings } = await googleGenAI.models.embedContent({
+                    model: 'text-embedding-004',
                     contents: chunk,
                 })
+
+                await redis.decr(REDIS_RATE_LIMIT_KEY)
 
                 embeddingsResults.push({
                     metadata: {
@@ -126,15 +145,8 @@ export class ProcessData {
                         websiteId,
                         sectionNo: baseSectionNo + i,
                     },
-                    embedding: response.embeddings,
+                    embedding: embeddings,
                 })
-
-                // Avoid unnecessary delay after the last request
-                if (i < chunks.length - 1) {
-                    await new Promise((resolve) =>
-                        setTimeout(resolve, INTERVAL)
-                    )
-                }
             }
 
             return embeddingsResults

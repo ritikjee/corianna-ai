@@ -37,8 +37,16 @@ export class RabbitMQ {
         this.channel.consume(queue, async (msg) => {
             if (msg) {
                 await callback(msg)
-                this.channel!.ack(msg)
             }
         })
+    }
+
+    async ack(msg: amqp.ConsumeMessage) {
+        if (!this.channel) {
+            logger.error('RabbitMQ channel is not initialized')
+            return
+        }
+
+        this.channel.ack(msg)
     }
 }
