@@ -1,0 +1,20 @@
+meta {
+  name: Login
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{auth_service_url}}/login
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "firstName":"xxxxx", // Optional
+    "lastName":"xxxxxx", // Optional
+    "email":"email@example.com",
+    "password":"xxxxxxxx" // Atleast 8 character
+  }
+}
