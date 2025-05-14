@@ -45,9 +45,9 @@ public class Member {
     private String userId;
 
     @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "website_id", nullable = false)
+    @JoinColumn(name = "app_id", nullable = false)
     @OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
-    private Website website;
+    private App app;
 
     @PrePersist
     public void prePersist() {

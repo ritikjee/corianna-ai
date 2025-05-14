@@ -1,5 +1,7 @@
 package com.corianna.auth_service.controllers;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.corianna.auth_service.constants.CookieNames;
 import com.corianna.auth_service.dto.ResponseDTO;
+import com.corianna.auth_service.dto.UserDTO;
 import com.corianna.auth_service.entity.User;
 import com.corianna.auth_service.services.DeviceService;
 
@@ -35,7 +38,9 @@ public class UserController {
     public ResponseEntity<?> getAuthenticatedUser(HttpServletRequest request) {
 
         try {
-            User user = (User) request.getAttribute("user");
+            Object userObj = request.getAttribute("user");
+            @SuppressWarnings("unchecked")
+            Map<String, Object> user = (userObj instanceof Map) ? (Map<String, Object>) userObj : null;
 
             if (user == null) {
                 return ResponseEntity
@@ -43,7 +48,14 @@ public class UserController {
                         .body(new ResponseDTO<>("User not found", 400, null, null, request.getRequestURI()));
             }
 
-            return ResponseEntity.ok(new ResponseDTO<>("User Info", 200, null, user, request.getRequestURI()));
+            UserDTO userDTO = new UserDTO();
+            userDTO.setId((String) user.get("sub"));
+            userDTO.setEmail((String) user.get("email"));
+            userDTO.setFirstname((String) user.get("firstName"));
+            userDTO.setLastname((String) user.get("lastName"));
+            userDTO.setImage((String) user.get("image"));
+
+            return ResponseEntity.ok(new ResponseDTO<>("User Info", 200, null, userDTO, request.getRequestURI()));
 
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(

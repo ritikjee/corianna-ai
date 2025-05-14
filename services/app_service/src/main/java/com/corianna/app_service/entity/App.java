@@ -20,10 +20,10 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Website implements Serializable {
+public class App implements Serializable {
 
     @Id
-    @Column(name = "website_id", nullable = false, unique = true)
+    @Column(name = "app_id", nullable = false, unique = true)
     private String id;
 
     @Column(name = "name", nullable = false)

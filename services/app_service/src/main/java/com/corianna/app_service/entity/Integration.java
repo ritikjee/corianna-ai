@@ -31,9 +31,9 @@ public class Integration {
     private String id;
 
     @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "website_id", nullable = false)
+    @JoinColumn(name = "app_id", nullable = false)
     @OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
-    private Website website;
+    private App app;
 
     @Column(name = "api_key", nullable = false, unique = true, updatable = false)
     private String apiKey;

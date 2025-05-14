@@ -1,0 +1,6 @@
+type Query {
+  getApps: [App]
+}
+type Mutation {
+  createApp(input: CreateAppInput!): App
+}
