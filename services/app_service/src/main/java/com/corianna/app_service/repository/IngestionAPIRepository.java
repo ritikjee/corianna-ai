@@ -13,4 +13,6 @@ public interface IngestionAPIRepository extends JpaRepository<IngestionAPI, Stri
 
     Optional<List<IngestionAPI>> findByAppId(String appId);
 
+    Optional<IngestionAPI> findByApiKey(String apiKey);
+
 }

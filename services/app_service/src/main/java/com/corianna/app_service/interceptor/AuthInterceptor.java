@@ -27,6 +27,13 @@ public class AuthInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
+
+        String URI = request.getRequestURI();
+
+        if (URI.startsWith("/api/ingest")) {
+            return true;
+        }
+
         try {
             String userId = request.getHeader("userId");
 
