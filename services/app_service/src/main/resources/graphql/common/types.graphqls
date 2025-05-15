@@ -1,0 +1,32 @@
+type App {
+  id: ID!
+  name: String!
+  url: String!
+  updatedAt: String!
+  createdAt: String!
+}
+
+type Chatbot {
+  id: ID!
+  app: App!
+  apiKey: String!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type KeyValue {
+  key: String!
+  value: String!
+}
+
+type Webhook {
+  id: ID!
+  app: App!
+  name: String!
+  url: String!
+  token: String!
+  headers: [KeyValue!]
+  isActive: Boolean!
+  createdAt: String!
+  updatedAt: String!
+}

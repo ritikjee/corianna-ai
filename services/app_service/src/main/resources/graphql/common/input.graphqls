@@ -1,12 +1,12 @@
-type App {
-  id: ID
-  name: String
-  url: String
-  updatedAt: String
-  createdAt: String
-}
-
 input CreateAppInput {
   name: String!
   url: String!
+}
+
+input CreateWebhookInput {
+  appId: ID!
+  name: String!
+  url: String!
+  token: String!
+  headers: [KeyValueInput!]
 }

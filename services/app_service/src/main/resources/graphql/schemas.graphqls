@@ -1,6 +1,14 @@
 type Query {
   getApps: [App]
+  getChatbot(appId: String!): Chatbot
+  getWebhooks(appId: String!): [Webhook]
 }
+
 type Mutation {
   createApp(input: CreateAppInput!): App
+  createChatbot(appId: String!): Chatbot
+  deleteChatbot(appId: String!): App
+  createWebhook(input: CreateWebhookInput!): Webhook
+  deleteWebhook(webhookId: String!): Webhook
+  updateWebhookActiveStatus(webhookId: String!, active: Boolean!): Webhook
 }
