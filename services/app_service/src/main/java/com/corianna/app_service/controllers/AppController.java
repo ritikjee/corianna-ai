@@ -2,6 +2,7 @@ package com.corianna.app_service.controllers;
 
 import java.util.List;
 
+import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
@@ -33,16 +34,16 @@ public class AppController {
     }
 
     @MutationMapping
-    public App createApp(CreateAppInput input) {
+    public App createApp(@Argument("input") CreateAppInput input) {
         String userId = (String) request.getAttribute("userId");
         if (userId == null) {
             throw new IllegalArgumentException("User ID is missing in the request.");
         }
-        return appService.createApp(input.appName(), input.websiteUrl(), userId);
+        return appService.createApp(input.name(), input.url(), userId);
     }
 
     @MutationMapping
-    public String deleteApp(String appId) {
+    public String deleteApp(@Argument("appId") String appId) {
         String userId = (String) request.getAttribute("userId");
         if (userId == null) {
             throw new IllegalArgumentException("User ID is missing in the request.");

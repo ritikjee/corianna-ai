@@ -1,14 +1,28 @@
 type Query {
   getApps: [App]
   getChatbot(appId: String!): Chatbot
+  getWebhook(appId: String!, webhookId: String!): Webhook
   getWebhooks(appId: String!): [Webhook]
+  getIngestionAPIs(appId: String!): [Ingestion]
+  getIngestionAPI(appId: String!, ingestionId: String!): Ingestion
 }
 
 type Mutation {
   createApp(input: CreateAppInput!): App
   createChatbot(appId: String!): Chatbot
-  deleteChatbot(appId: String!): App
+  deleteChatbot(appId: ID!): App
   createWebhook(input: CreateWebhookInput!): Webhook
-  deleteWebhook(webhookId: String!): Webhook
-  updateWebhookActiveStatus(webhookId: String!, active: Boolean!): Webhook
+  deleteWebhook(webhookId: ID!, appId: ID!): Webhook
+  updateWebhookActiveStatus(
+    webhookId: ID!
+    appId: ID!
+    active: Boolean!
+  ): Webhook
+  createIngestionAPI(appId: String!, name: String!): Ingestion
+  deleteIngestionAPI(ingestionAPIId: ID!, appId: ID!): Ingestion
+  updateIngestionAPIActiveStatus(
+    ingestionAPIId: ID!
+    appId: ID!
+    active: Boolean!
+  ): Ingestion
 }

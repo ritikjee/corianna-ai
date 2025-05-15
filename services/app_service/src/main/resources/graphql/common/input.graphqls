@@ -3,10 +3,15 @@ input CreateAppInput {
   url: String!
 }
 
+input KeyValue {
+  key: String!
+  value: String!
+}
+
 input CreateWebhookInput {
   appId: ID!
   name: String!
   url: String!
   token: String!
-  headers: [KeyValueInput!]
+  headers: [KeyValue!]
 }

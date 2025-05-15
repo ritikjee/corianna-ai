@@ -14,7 +14,7 @@ type Chatbot {
   updatedAt: String!
 }
 
-type KeyValue {
+type KeyValueOutput {
   key: String!
   value: String!
 }
@@ -25,7 +25,17 @@ type Webhook {
   name: String!
   url: String!
   token: String!
-  headers: [KeyValue!]
+  headers: [KeyValueOutput!]
+  isActive: Boolean!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type Ingestion {
+  id: ID!
+  app: App!
+  name: String!
+  apiKey: String!
   isActive: Boolean!
   createdAt: String!
   updatedAt: String!

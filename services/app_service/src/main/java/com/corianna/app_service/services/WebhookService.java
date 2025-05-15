@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import com.corianna.app_service.entity.Member;
@@ -26,13 +27,26 @@ public class WebhookService {
         this.memberService = memberService;
     }
 
+    @Cacheable(value = "webhook", key = "#webhookId")
+    private Webhook findWebhookById(String webhookId) {
+        return webhookRepository.findById(webhookId)
+                .orElseThrow(() -> new IllegalArgumentException("Webhook not found"));
+    }
+
     @Cacheable(value = "webhook", key = "#userId" + "#appId")
-    public List<Webhook> getWebhook(String userId, String appId) {
+    public List<Webhook> getWebhooks(String userId, String appId) {
         memberService.getMemberInfo(userId, appId)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found"));
 
         return webhookRepository.findByAppId(appId)
                 .orElseThrow(() -> new IllegalArgumentException("Webhook not found"));
+    }
+
+    public Webhook getWebhookById(String userId, String appId, String webhookId) {
+        memberService.getMemberInfo(userId, appId)
+                .orElseThrow(() -> new IllegalArgumentException("Member not found"));
+
+        return findWebhookById(webhookId);
     }
 
     @CacheEvict(value = "webhook", key = "#userId" + "#input.appId()")
@@ -67,32 +81,33 @@ public class WebhookService {
     }
 
     @CacheEvict(value = "webhook", allEntries = true)
-    public String deleteWebhook(String userId, String webhookId) {
-        Member member = memberService.getMemberInfo(userId, webhookId)
+    public String deleteWebhook(String userId, String appId, String webhookId) {
+        Member member = memberService.getMemberInfo(userId, appId)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found"));
 
         if (member.getRole() == RoleEnum.MEMBER) {
             throw new IllegalArgumentException("Member does not have permission to delete webhook");
         }
 
-        Webhook webhook = webhookRepository.findById(webhookId)
-                .orElseThrow(() -> new IllegalArgumentException("Webhook not found"));
+        Webhook webhook = findWebhookById(webhookId);
 
         webhookRepository.delete(webhook);
         return "Webhook deleted successfully";
     }
 
-    @CacheEvict(value = "webhook", allEntries = true)
-    public Webhook updateWebhook(String userId, String webhookId, Boolean isActive) {
-        Member member = memberService.getMemberInfo(userId, webhookId)
+    @Caching(evict = {
+            @CacheEvict(value = "webhook", key = "#userId" + "#appId"),
+            @CacheEvict(value = "webhook", key = "#userId" + "#appId" + "#webhookId")
+    })
+    public Webhook updateWebhook(String userId, String appId, String webhookId, Boolean isActive) {
+        Member member = memberService.getMemberInfo(userId, appId)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found"));
 
         if (member.getRole() == RoleEnum.MEMBER) {
             throw new IllegalArgumentException("Member does not have permission to update webhook");
         }
 
-        Webhook webhook = webhookRepository.findById(webhookId)
-                .orElseThrow(() -> new IllegalArgumentException("Webhook not found"));
+        Webhook webhook = findWebhookById(webhookId);
 
         if (isActive != null) {
             webhook.setActive(isActive);
