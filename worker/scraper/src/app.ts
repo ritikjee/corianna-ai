@@ -72,23 +72,47 @@ async function main() {
                 return
             }
 
-            const url = msg.content.toString()
+            const data = msg.content.toString()
 
-            const urls = await Scapper.crawlAllInternalLinks(url)
+            const { url, mode, appId, metadata } = JSON.parse(data)
+
+            let urls: string[] = []
+
+            if (mode == 'full') {
+                urls = await Scapper.crawlAllInternalLinks(url)
+            }
+
+            if (mode == 'single') {
+                urls = [url]
+            }
+
+            if (mode == 'pattern') {
+                const patternUrls = await Scapper.crawlAllInternalLinks(url)
+                urls = patternUrls.filter((patternUrl) => {
+                    return patternUrl.includes(metadata)
+                })
+            }
 
             const limit = pLimit(5)
 
             const tasks = urls.map((url) =>
-                limit(() =>
-                    ProcessData.scrapeAndEmbed(
-                        url,
-                        1000,
-                        Math.floor(Math.random() * 1000).toString()
-                    )
-                )
+                limit(() => ProcessData.scrapeAndEmbed(url, 2000, appId))
             )
 
             await Promise.all(tasks)
+
+            if (mode == 'pattern') {
+                const message = {
+                    urls: urls,
+                    appId: appId,
+                    metadata: metadata,
+                }
+
+                await kafka.sendMessage(
+                    'ingestion_api_response',
+                    JSON.stringify(message)
+                )
+            }
 
             await rabbitmq.ack(msg)
         }

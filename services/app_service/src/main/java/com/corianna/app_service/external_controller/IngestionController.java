@@ -1,5 +1,7 @@
 package com.corianna.app_service.external_controller;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -51,7 +53,11 @@ public class IngestionController {
 
             String mode = url.contains("*") ? "pattern" : "single";
 
-            ScrapeWebsiteMessage message = new ScrapeWebsiteMessage(url, mode, ingestionAPI.getApp().getId());
+            ScrapeWebsiteMessage message = new ScrapeWebsiteMessage(url, mode,
+                    ingestionAPI.getApp().getId(),
+                    Map.of("name", ingestionAPI.getName(),
+                            "api_key", ingestionAPI.getApiKey(),
+                            "url", url));
 
             messageProducer.sendMessage(message);
 

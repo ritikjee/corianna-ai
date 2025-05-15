@@ -41,9 +41,9 @@ export class Kafka {
         await this.producer.disconnect()
     }
 
-    async sendMessage(message: string) {
+    async sendMessage(message: string, topic: string) {
         await this.producer.send({
-            topic: KAFKA_DEFAULT_TOPIC,
+            topic,
             messages: [{ value: message }],
         })
     }

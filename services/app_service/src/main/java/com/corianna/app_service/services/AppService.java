@@ -1,6 +1,7 @@
 package com.corianna.app_service.services;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.cache.annotation.CacheEvict;
@@ -49,7 +50,7 @@ public class AppService {
 
         membersRepository.save(member);
 
-        ScrapeWebsiteMessage message = new ScrapeWebsiteMessage(websiteUrl, "full", newApp.getId());
+        ScrapeWebsiteMessage message = new ScrapeWebsiteMessage(websiteUrl, "full", newApp.getId(), Map.of());
 
         messageProducer.sendMessage(message);
 
