@@ -1,34 +1,16 @@
 import { createClient } from 'redis'
-import {
-    GEMINI_TEXT_EMBEDDING_004_RATE_LIMIT_PER_MINUTE,
-    REDIS_RATE_LIMIT_KEY,
-} from '../constants'
 import { logger } from '../utils/logger'
 
 export class RedisClient {
     private client: ReturnType<typeof createClient>
 
-    private redisURL = process.env.REDIS_URL as string
-
-    constructor() {
-        if (!this.redisURL) {
-            logger.error('REDIS_URL environment variable is not set.')
-            process.exit(1)
-        }
-        this.client = createClient({ url: this.redisURL })
+    constructor(url: string) {
+        this.client = createClient({ url })
     }
 
     async connect() {
         try {
             await this.client.connect()
-
-            await this.client.set(
-                REDIS_RATE_LIMIT_KEY,
-                GEMINI_TEXT_EMBEDDING_004_RATE_LIMIT_PER_MINUTE,
-                {
-                    EX: 60,
-                }
-            )
         } catch (error) {
             logger.error('Error connecting to Redis:', error)
             process.exit(1)
@@ -63,5 +45,10 @@ export class RedisClient {
             logger.error('Error decrementing key in Redis:', error)
             return null
         }
+    }
+
+    async disconnect() {
+        await this.client.quit()
+        logger.info('Redis client disconnected')
     }
 }

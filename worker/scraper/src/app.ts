@@ -17,7 +17,6 @@ import { startRateLimitRefresher } from './utils/helper'
 async function main() {
     const rabbitMQUrl = process.env.RABBITMQ_URL as string
     const kafkaBrokerUrl = process.env.KAFKA_BROKER_URL as string
-    const redisURL = process.env.REDIS_URL as string
 
     if (!rabbitMQUrl) {
         logger.error('RABBITMQ_URL environment variable is not set.')
@@ -28,16 +27,12 @@ async function main() {
         logger.error('KAFKA_BROKER_URL environment variable is not set.')
         process.exit(1)
     }
-    if (!redisURL) {
-        logger.error('REDIS_URL environment variable is not set.')
-        process.exit(1)
-    }
 
     logger.info('Connecting to RabbitMQ and Kafka...')
 
     const rabbitmq = new RabbitMQ(rabbitMQUrl)
     const kafka = new Kafka([kafkaBrokerUrl])
-    const redis = new RedisClient(redisURL)
+    const redis = new RedisClient()
 
     try {
         await rabbitmq.connect()

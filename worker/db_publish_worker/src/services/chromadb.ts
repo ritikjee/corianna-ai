@@ -47,7 +47,7 @@ export class ChromaDB {
                 const { embedding, metadata } = message
 
                 if (!embedding?.[0]?.values?.length) {
-                    console.warn(
+                    logger.warn(
                         'Skipping message due to missing embedding:',
                         metadata?.url
                     )

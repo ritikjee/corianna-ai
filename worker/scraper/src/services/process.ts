@@ -111,25 +111,25 @@ export class ProcessData {
             embedding: ContentEmbedding[] | undefined
         }[] = []
 
-        const redis = new RedisClient(process.env.REDIS_URL as string)
+        const redis = new RedisClient()
 
         try {
             for (let i = 0; i < chunks.length; i++) {
                 let rate = Number(await redis.get(REDIS_RATE_LIMIT_KEY))
 
-                if (!rate) {
-                    while (!rate) {
-                        logger.info(
-                            'Rate limit reached. Retrying in 2 seconds...'
-                        )
+                // if (!rate) {
+                //     while (!rate) {
+                //         logger.info(
+                //             'Rate limit reached. Retrying in 2 seconds...'
+                //         )
 
-                        await new Promise((resolve) =>
-                            setTimeout(resolve, 5000)
-                        )
+                //         await new Promise((resolve) =>
+                //             setTimeout(resolve, 5000)
+                //         )
 
-                        rate = Number(await redis.get(REDIS_RATE_LIMIT_KEY))
-                    }
-                }
+                //         rate = Number(await redis.get(REDIS_RATE_LIMIT_KEY))
+                //     }
+                // }
 
                 const chunk = chunks[i]
                 const { embeddings } = await googleGenAI.models.embedContent({

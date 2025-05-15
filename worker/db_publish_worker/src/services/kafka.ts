@@ -1,6 +1,7 @@
 import { Consumer, Kafka as kafkajs, EachMessagePayload } from 'kafkajs'
 import { KAFKA_DEFAULT_TOPIC } from '../constants'
 import { logger } from '../utils/logger'
+import { kafkaLogCreator } from '../utils/kafka-logger'
 
 export class KafkaClient {
     private kafka: kafkajs
@@ -10,6 +11,7 @@ export class KafkaClient {
         this.kafka = new kafkajs({
             clientId: 'my-app',
             brokers,
+            logCreator: kafkaLogCreator,
         })
         this.consumer = this.kafka.consumer({ groupId: KAFKA_DEFAULT_TOPIC })
     }
