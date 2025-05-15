@@ -34,7 +34,6 @@ public class IngestionController {
     public ResponseEntity<ResponseDTO<?>> ingestNewURL(
             @RequestParam("api_key") String apiKey,
             @RequestParam("url") String url,
-            @RequestParam("mode") String mode,
             HttpServletRequest request) {
         try {
             if (apiKey == null || apiKey.isEmpty()) {
@@ -47,18 +46,10 @@ public class IngestionController {
                         new ResponseDTO<>("Bad Request", 400, null, "URL is missing", request.getRequestURI()));
             }
 
-            if (mode == null || mode.isEmpty()) {
-                return ResponseEntity.badRequest().body(
-                        new ResponseDTO<>("Bad Request", 400, null, "Mode is missing", request.getRequestURI()));
-            }
-            if (!mode.equals("all") || !mode.equals("new")) {
-                return ResponseEntity.badRequest().body(
-                        new ResponseDTO<>("Bad Request", 400, null, "Mode should be either 'all' or 'new'",
-                                request.getRequestURI()));
-
-            }
             IngestionAPI ingestionAPI = ingestionAPIRepository.findByApiKey(apiKey).orElseThrow(
                     () -> new IllegalArgumentException("Ingestion API not found with the provided API key"));
+
+            String mode = url.contains("*") ? "pattern" : "single";
 
             ScrapeWebsiteMessage message = new ScrapeWebsiteMessage(url, mode, ingestionAPI.getApp().getId());
 
