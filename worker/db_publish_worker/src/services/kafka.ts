@@ -25,9 +25,12 @@ export class KafkaClient {
         }
     }
 
-    async init(onMessage: (payload: EachMessagePayload) => Promise<void>) {
+    async subscribe(
+        topic: string,
+        onMessage: (payload: EachMessagePayload) => Promise<void>
+    ) {
         await this.consumer.subscribe({
-            topic: KAFKA_DEFAULT_TOPIC,
+            topic,
             fromBeginning: true,
         })
 

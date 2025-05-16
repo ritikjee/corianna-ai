@@ -1,9 +1,14 @@
 import 'dotenv/config'
 
-import { KafkaClient } from './services/kafka'
-import { KAFKA_MESSAGE } from './types'
+import { KAFKA_DEFAULT_TOPIC } from './constants'
 import { ChromaDB } from './services/chromadb'
+import { KafkaClient } from './services/kafka'
+import { CHAT_ANSWER_RESPONSE, KAFKA_MESSAGE, WEBHOOK_MESSAGE } from './types'
+import { createFlushScheduler } from './utils/flush-scheduler'
 import { logger } from './utils/logger'
+import { MongoDB } from './services/mongodb'
+import Chat from './models/chat'
+import Webhook from './models/webhook'
 
 async function main() {
     const KAFKA_BROKER_URL = process.env.KAFKA_BROKER_URL
@@ -14,37 +19,17 @@ async function main() {
 
     const client = new KafkaClient([KAFKA_BROKER_URL])
     const chromaClient = new ChromaDB()
+    const mongoClient = new MongoDB()
 
-    await client.connect()
-    await chromaClient.init()
+    await Promise.all([
+        client.connect(),
+        chromaClient.init(),
+        mongoClient.connect(),
+    ])
 
-    logger.info('Connected to Kafka and ChromaDB')
+    logger.info('Connected to Kafka, MongoDB and ChromaDB')
 
-    const messageBuffer: KAFKA_MESSAGE[] = []
-    const MAX_BATCH_SIZE = 100
-    const FLUSH_INTERVAL_MS = 30_000
-
-    let flushTimeout: NodeJS.Timeout
-
-    const flushMessages = async () => {
-        if (messageBuffer.length === 0) return
-        const batch = messageBuffer.splice(0, messageBuffer.length) // clear buffer
-        await chromaClient.addDocuments(batch)
-        logger.info(`Flushed ${batch.length} messages to ChromaDB`)
-    }
-
-    const scheduleFlush = () => {
-        logger.info(`Scheduling flush in ${FLUSH_INTERVAL_MS}ms`)
-        clearTimeout(flushTimeout) // reset timer
-        flushTimeout = setTimeout(async () => {
-            await flushMessages()
-            scheduleFlush() // reschedule
-        }, FLUSH_INTERVAL_MS)
-    }
-
-    scheduleFlush()
-
-    await client.init(async (payload) => {
+    await client.subscribe(KAFKA_DEFAULT_TOPIC, async (payload) => {
         const {
             message: { value },
         } = payload
@@ -56,14 +41,101 @@ async function main() {
         try {
             const parsed: KAFKA_MESSAGE = JSON.parse(value.toString())
 
-            messageBuffer.push(parsed)
+            const scheduler = createFlushScheduler<KAFKA_MESSAGE>(
+                async (batch) => {
+                    await chromaClient.addDocuments(batch)
+                    logger.info(`Flushed ${batch.length} messages to ChromaDB`)
+                },
+                30_000,
+                100
+            )
 
-            if (messageBuffer.length >= MAX_BATCH_SIZE) {
-                await flushMessages()
-                scheduleFlush()
-            }
+            scheduler.add(parsed)
         } catch (err) {
-            logger.error('Error parsing message:', err)
+            logger.error('Error message:', err)
+        }
+    })
+
+    await client.subscribe('chat-answers', async (payload) => {
+        const {
+            message: { value },
+        } = payload
+
+        if (!value || !value.toString()) {
+            return
+        }
+
+        try {
+            const parsed = JSON.parse(value.toString())
+
+            const scheduler = createFlushScheduler<CHAT_ANSWER_RESPONSE>(
+                async (batch) => {
+                    await Chat.insertMany(
+                        batch.map((item) => ({
+                            answer: item.data.answer,
+                            question: item.data.question,
+                            appId: item.data.appId,
+                            messageId: item.data.messageId,
+                            chatId: item.data.chatId,
+                            candidatesTokenCount:
+                                item.usageMetadata.candidatesTokenCount,
+                            promptTokenCount:
+                                item.usageMetadata.promptTokenCount,
+                            totalTokenCount: item.usageMetadata.totalTokenCount,
+                        }))
+                    )
+
+                    logger.info(`Flushed ${batch.length} messages to MongoDB`)
+                },
+                30_000,
+                100
+            )
+
+            scheduler.add(parsed)
+        } catch (err) {
+            logger.error('Error message:', err)
+        }
+    })
+
+    await client.subscribe('webhook-responses', async (payload) => {
+        const {
+            message: { value },
+        } = payload
+
+        if (!value || !value.toString()) {
+            return
+        }
+
+        try {
+            const parsed = JSON.parse(value.toString())
+
+            const scheduler = createFlushScheduler<WEBHOOK_MESSAGE>(
+                async (batch) => {
+                    await Webhook.insertMany(
+                        batch.map((item) => ({
+                            appId: item.appId,
+                            webhookId: item.webhook.id,
+                            messageId: item.data.messageId,
+                            chatId: item.data.chatId,
+                            url: item.webhook.url,
+                            name: item.webhook.name,
+                            response: {
+                                status: item.response.status,
+                                success: item.response.success,
+                                message: item.response.message,
+                                data: item.response.data,
+                            },
+                        }))
+                    )
+                    logger.info(`Flushed ${batch.length} messages to MongoDB`)
+                },
+                30_000,
+                100
+            )
+
+            scheduler.add(parsed)
+        } catch (err) {
+            logger.error('Error message:', err)
         }
     })
 }

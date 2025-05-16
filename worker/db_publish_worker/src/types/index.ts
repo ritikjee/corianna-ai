@@ -12,3 +12,44 @@ export type KAFKA_MESSAGE = {
         values: string[]
     }[]
 }
+
+export type CHAT_ANSWER_RESPONSE = {
+    data: {
+        answer: string
+        question: string
+        appId: string
+        messageId: string
+        chatId: string
+        requestId: string
+    }
+    usageMetadata: {
+        candidatesTokenCount: number
+        promptTokenCount: number
+        totalTokenCount: number
+    }
+}
+
+export type WEBHOOK_MESSAGE = {
+    appId: string
+    webhookId: string
+    data: {
+        answer: string
+        question: string
+        appId: string
+        messageId: string
+        chatId: string
+        requestId: string
+    }
+    webhook: {
+        id: string
+        url: string
+        name: string
+    }
+    response: {
+        status: number
+        success: boolean
+        message: string
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: any
+    }
+}
