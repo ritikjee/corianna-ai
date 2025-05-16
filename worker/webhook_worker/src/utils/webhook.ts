@@ -1,20 +1,39 @@
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
+
+interface WebhookResponse<T = unknown> {
+    success: boolean
+    status: number
+    message: string
+    data: T | null
+}
 
 export const sendWebhook = async (
     url: string,
     data: unknown,
-    header: Record<string, string>
-) => {
+    headers: Record<string, string> = {}
+): Promise<WebhookResponse> => {
     try {
         const response = await axios.post(url, data, {
             headers: {
                 'Content-Type': 'application/json',
-                ...header,
+                ...headers,
             },
         })
-        return response
+
+        return {
+            success: true,
+            status: response.status,
+            message: 'Webhook sent successfully',
+            data: response.data,
+        }
     } catch (error) {
-        console.error('Error sending webhook:', error)
-        return error
+        const axiosError = error as AxiosError
+
+        return {
+            success: false,
+            status: axiosError.response?.status || 500,
+            message: axiosError.message || 'Unknown error occurred',
+            data: axiosError.response?.data || null,
+        }
     }
 }
