@@ -102,12 +102,19 @@ export class ProcessData {
 
     private static async generateEmbeddings(
         chunks: string[],
+        title: string,
         url: string,
         websiteId: string,
         baseSectionNo: number = 0
     ) {
         const embeddingsResults: {
-            metadata: { url: string; websiteId: string; sectionNo: number }
+            metadata: {
+                url: string
+                websiteId: string
+                sectionNo: number
+                title: string
+                body: string
+            }
             embedding: ContentEmbedding[] | undefined
         }[] = []
 
@@ -115,7 +122,9 @@ export class ProcessData {
 
         try {
             for (let i = 0; i < chunks.length; i++) {
-                let rate = Number(await redis.get(REDIS_RATE_LIMIT_KEY))
+                // TODO: Fix this rate limit check
+
+                // let rate = Number(await redis.get(REDIS_RATE_LIMIT_KEY))
 
                 // if (!rate) {
                 //     while (!rate) {
@@ -144,6 +153,8 @@ export class ProcessData {
                         url,
                         websiteId,
                         sectionNo: baseSectionNo + i,
+                        title,
+                        body: chunk,
                     },
                     embedding: embeddings,
                 })
@@ -169,6 +180,7 @@ export class ProcessData {
 
         const embeddedChunks = await this.generateEmbeddings(
             scrapedData.chunks,
+            scrapedData.title,
             url,
             websiteId
         )

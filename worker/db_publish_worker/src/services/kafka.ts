@@ -34,6 +34,7 @@ export class KafkaClient {
         logger.info(`Subscribed to topic ${KAFKA_DEFAULT_TOPIC}`)
 
         await this.consumer.run({
+            autoCommit: true,
             eachMessage: async (payload) => {
                 await onMessage(payload)
             },

@@ -17,7 +17,7 @@ import com.corianna.bot_service.dto.RequestIdResponse;
 import com.corianna.bot_service.utils.MessageProducer;
 
 @RestController
-@RequestMapping("/api/chat/{websiteId}")
+@RequestMapping("/api/chat/{appId}")
 public class ChatController {
 
     private final MessageProducer messageProducer;
@@ -28,7 +28,7 @@ public class ChatController {
 
     @PostMapping("/question")
     public ResponseEntity<?> getQuestion(@RequestBody QuestionRequest data,
-            @PathVariable("websiteId") String websiteId) {
+            @PathVariable("appId") String appId) {
         try {
             String requestId = UUID.randomUUID().toString();
 
@@ -46,7 +46,7 @@ public class ChatController {
 
             messageProducer.sendMessage("chat-questions", new KafkaMessageDTO(
                     requestId,
-                    websiteId,
+                    appId,
                     data.getChatId(),
                     data.getQuestion()));
 

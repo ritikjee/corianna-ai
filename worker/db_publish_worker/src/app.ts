@@ -30,9 +30,11 @@ async function main() {
         if (messageBuffer.length === 0) return
         const batch = messageBuffer.splice(0, messageBuffer.length) // clear buffer
         await chromaClient.addDocuments(batch)
+        logger.info(`Flushed ${batch.length} messages to ChromaDB`)
     }
 
     const scheduleFlush = () => {
+        logger.info(`Scheduling flush in ${FLUSH_INTERVAL_MS}ms`)
         clearTimeout(flushTimeout) // reset timer
         flushTimeout = setTimeout(async () => {
             await flushMessages()

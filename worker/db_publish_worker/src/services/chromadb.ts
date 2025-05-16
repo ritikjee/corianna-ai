@@ -69,6 +69,10 @@ export class ChromaDB {
                 embeddings: documents,
                 metadatas,
             })
+
+            logger.info(
+                `Added ${ids.length} documents to ChromaDB collection ${CHROMADB_COLLECTION_NAME}`
+            )
         } catch (error) {
             logger.error('Error adding documents to ChromaDB:', error)
         }

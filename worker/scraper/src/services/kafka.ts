@@ -2,6 +2,7 @@ import { Admin, Kafka as KafkaJS, Producer } from 'kafkajs'
 import { KAFKA_DEFAULT_TOPIC } from '../constants'
 import { KafkaMessage } from '../types'
 import { logger } from '../utils/logger'
+import { kafkaLogCreator } from '../utils/kafka-log-creator'
 
 export class Kafka {
     private kafka: KafkaJS
@@ -16,6 +17,7 @@ export class Kafka {
         this.kafka = new KafkaJS({
             clientId: 'my-app',
             brokers,
+            logCreator: kafkaLogCreator,
         })
         this.producer = this.kafka.producer()
         this.admin = this.kafka.admin()

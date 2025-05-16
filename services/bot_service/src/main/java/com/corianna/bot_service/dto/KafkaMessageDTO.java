@@ -12,7 +12,7 @@ import lombok.Setter;
 public class KafkaMessageDTO {
 
     private String requestId;
-    private String websiteId;
+    private String appId;
     private String chatId;
     private String question;
 

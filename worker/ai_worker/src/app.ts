@@ -1,8 +1,11 @@
+import { v4 as uuid } from 'uuid'
 import { ChromaDB } from './services/chromadb'
 import { googleGenAI } from './services/gemini'
 import { KafkaComnsumer } from './services/kafka/consumer'
 import { KafkaProducer } from './services/kafka/producer'
 import { RedisClient } from './services/redis'
+import { CHROMA_DB_METADATA } from './types'
+import { formatWebsiteContent } from './utils/helper'
 import { logger } from './utils/logger'
 
 async function main() {
@@ -24,9 +27,14 @@ async function main() {
         'chat-questions'
     )
 
-    const kafkaProducer = new KafkaProducer(
+    const chatAnswerProducer = new KafkaProducer(
         [KAFKA_PRODUCER_BROKER],
         'chat-answers'
+    )
+
+    const webhookWorkerProducer = new KafkaProducer(
+        [KAFKA_PRODUCER_BROKER],
+        'webhook-worker'
     )
 
     const redisClient = new RedisClient(REDIS_CONNECTION_URI)
@@ -35,7 +43,10 @@ async function main() {
 
     await Promise.all([
         kafkaConsumer.connect(),
-        kafkaProducer.connect(),
+        chatAnswerProducer.init(),
+        webhookWorkerProducer.init(),
+        chatAnswerProducer.connect(),
+        webhookWorkerProducer.connect(),
         redisClient.connect(),
         chromaClient.init(),
     ])
@@ -61,11 +72,11 @@ async function main() {
             return
         }
 
-        const { question } = JSON.parse(value.toString())
+        const data = JSON.parse(value.toString())
 
         const { embeddings } = await googleGenAI.models.embedContent({
             model: 'text-embedding-004',
-            contents: [question],
+            contents: [data.question],
         })
 
         if (!embeddings || !embeddings[0]) {
@@ -82,7 +93,36 @@ async function main() {
 
         const results = await chromaClient.query(query, 5)
 
-        console.log('Results:', results)
+        const { candidates, usageMetadata } =
+            await googleGenAI.models.generateContent({
+                model: 'gemini-1.5-flash-8b',
+                contents: [
+                    `You are a helpful assistant. Answer the question based on the following content:\n\n${formatWebsiteContent(results.metadatas as CHROMA_DB_METADATA[][])}\n\nQuestion: ${data.question}\nAnswer:`,
+                ],
+                config: {
+                    systemInstruction: {
+                        role: 'system',
+                        text: 'You are a helpful assistant. Answer the question based on the following content and give detailed answer explaining each point. Note try to be polite and friendly.Use emojis where possible.',
+                    },
+                },
+            })
+
+        const answer =
+            candidates?.[0]?.content ||
+            'Sorry, I could not find an answer to your question at current point of time. Please try again later.'
+
+        const messageId = uuid()
+
+        chatAnswerProducer.sendMessage(
+            JSON.stringify({
+                data: { answer, messageId, ...data },
+                usageMetadata,
+            })
+        )
+
+        webhookWorkerProducer.sendMessage(
+            JSON.stringify({ ...data, answer, messageId })
+        )
     })
 }
 
