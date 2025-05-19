@@ -26,7 +26,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Member {
+public class Member implements java.io.Serializable {
 
     @Id
     @Column(name = "member_id", nullable = false, updatable = false)

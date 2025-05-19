@@ -74,6 +74,8 @@ async function main() {
 
         const data = JSON.parse(value.toString())
 
+        console.log('Received data:', data)
+
         const { embeddings } = await googleGenAI.models.embedContent({
             model: 'text-embedding-004',
             contents: [data.question],
@@ -91,7 +93,7 @@ async function main() {
             return
         }
 
-        const results = await chromaClient.query(query, 5)
+        const results = await chromaClient.query(query, 5, data.appId)
 
         const { candidates, usageMetadata } =
             await googleGenAI.models.generateContent({
@@ -107,21 +109,53 @@ async function main() {
                 },
             })
 
-        const answer =
-            candidates?.[0]?.content ||
-            'Sorry, I could not find an answer to your question at current point of time. Please try again later.'
+        const answer: {
+            answer: string
+            status: string
+        } = {
+            answer: '',
+            status: 'error',
+        }
+
+        if (candidates?.[0]?.content?.parts?.[0]?.text) {
+            answer.answer = candidates[0].content.parts[0].text
+            answer.status = 'success'
+        } else {
+            answer.answer =
+                'Sorry, I could not find an answer to your question.'
+            answer.status = 'error'
+        }
 
         const messageId = uuid()
 
+        redisClient.set(
+            `answer:${data.requestId}`,
+            JSON.stringify({
+                answer,
+                messageId,
+                question: data.question,
+                requestId: data.requestId,
+                appId: data.appId,
+            })
+        )
+
         chatAnswerProducer.sendMessage(
             JSON.stringify({
-                data: { answer, messageId, ...data },
+                data: {
+                    answer: JSON.stringify(answer.answer),
+                    messageId,
+                    ...data,
+                },
                 usageMetadata,
             })
         )
 
         webhookWorkerProducer.sendMessage(
-            JSON.stringify({ ...data, answer, messageId })
+            JSON.stringify({
+                ...data,
+                answer: JSON.stringify(answer.answer),
+                messageId,
+            })
         )
     })
 }

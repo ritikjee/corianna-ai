@@ -24,7 +24,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Integration {
+public class Integration implements java.io.Serializable {
 
     @Id
     @Column(name = "integration_id", nullable = false, unique = true)

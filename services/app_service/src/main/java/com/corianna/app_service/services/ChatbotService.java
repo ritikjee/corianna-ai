@@ -1,5 +1,7 @@
 package com.corianna.app_service.services;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.corianna.app_service.entity.Chatbot;
@@ -18,6 +20,7 @@ public class ChatbotService {
         this.chatbotRepository = chatbotRepository;
     }
 
+    @Cacheable(value = "chatbot", key = "#userId + '::' + #appId")
     public Chatbot getChatbot(String appId, String userId) {
         memberService.getMemberInfo(userId, appId)
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -27,6 +30,7 @@ public class ChatbotService {
                 .orElseThrow(() -> new IllegalArgumentException("Chatbot not found for app ID: " + appId));
     }
 
+    @Cacheable(value = "chatbot", key = "#userId + '::' + #appId")
     public Chatbot createChatbot(String appId, String userId) {
         Member member = memberService.getMemberInfo(userId, appId)
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -43,6 +47,7 @@ public class ChatbotService {
 
     }
 
+    @CacheEvict(value = "chatbot", key = "#userId + '::' + #appId")
     public String deleteChatbot(String appId, String userId) {
         memberService.getMemberInfo(userId, appId)
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -54,5 +59,11 @@ public class ChatbotService {
         chatbotRepository.delete(chatbot);
 
         return "Chatbot deleted successfully for App ID: " + appId;
+    }
+
+    @Cacheable(value = "chatbot", key = "#apiKey")
+    public Chatbot getChatbotByApiKey(String apiKey) {
+        return chatbotRepository.findByApiKey(apiKey)
+                .orElseThrow(() -> new IllegalArgumentException("Chatbot not found for API key: " + apiKey));
     }
 }

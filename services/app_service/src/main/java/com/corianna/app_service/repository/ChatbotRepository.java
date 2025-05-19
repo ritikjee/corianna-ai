@@ -12,4 +12,6 @@ public interface ChatbotRepository extends JpaRepository<Chatbot, String> {
 
     Optional<Chatbot> findByAppId(String appId);
 
+    Optional<Chatbot> findByApiKey(String apiKey);
+
 }

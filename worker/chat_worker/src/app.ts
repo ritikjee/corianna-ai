@@ -87,11 +87,11 @@ async function main() {
             return
         }
 
-        const { requestId, websiteId, chatId, question } = JSON.parse(
+        const { requestId, appId, chatId, question } = JSON.parse(
             value.toString()
         )
 
-        if (!requestId || !websiteId || !chatId || !question) {
+        if (!requestId || !appId || !chatId || !question) {
             return
         }
 
@@ -109,7 +109,7 @@ async function main() {
         kafkaProducer.sendMessage(
             JSON.stringify({
                 requestId,
-                websiteId,
+                appId,
                 chatId,
                 question,
                 embedding,

@@ -37,7 +37,7 @@ public class App implements Serializable {
 
     @PrePersist
     public void prePersist() {
-        this.id = GenerateKeys.generateKey("website");
+        this.id = GenerateKeys.generateKey("app");
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }

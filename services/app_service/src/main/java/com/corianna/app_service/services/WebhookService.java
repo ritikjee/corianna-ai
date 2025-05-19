@@ -116,4 +116,10 @@ public class WebhookService {
         return updatedWebhook;
     }
 
+    @Cacheable(value = "webhooks", key = "#appId")
+    public List<Webhook> getWebhooks(String appId) {
+        return webhookRepository.findByAppId(appId)
+                .orElseThrow(() -> new IllegalArgumentException("Webhook not found"));
+    }
+
 }

@@ -99,7 +99,7 @@ async function main() {
             if (mode == 'pattern') {
                 const message = {
                     urls: urls,
-                    appId: appId,
+                    websiteId: appId,
                     metadata: metadata,
                 }
 

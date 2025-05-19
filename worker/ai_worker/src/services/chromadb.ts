@@ -31,11 +31,16 @@ export class ChromaDB {
         }
     }
 
-    async query(query: number[], nResults: number = 5) {
+    async query(query: number[], nResults: number = 5, appId: string) {
         try {
             const results = await this.collection.query({
                 queryEmbeddings: query,
                 nResults: nResults,
+                where: {
+                    websiteId: {
+                        $eq: appId,
+                    },
+                },
             })
 
             return results

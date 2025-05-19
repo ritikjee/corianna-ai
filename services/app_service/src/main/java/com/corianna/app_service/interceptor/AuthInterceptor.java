@@ -2,6 +2,7 @@ package com.corianna.app_service.interceptor;
 
 import java.io.IOException;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -18,6 +19,9 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
 
+    @Value("${secrets.x-app-secret}")
+    private String xAppSecret;
+
     private final AuthService authService;
 
     public AuthInterceptor(AuthService authService) {
@@ -31,6 +35,16 @@ public class AuthInterceptor implements HandlerInterceptor {
         String URI = request.getRequestURI();
 
         if (URI.startsWith("/api/ingest")) {
+            return true;
+        }
+
+        if (URI.startsWith("/api/internal-services")) {
+            String xAppSecretHeader = request.getHeader("x-app-secret");
+            if (xAppSecretHeader == null || !xAppSecretHeader.equals(xAppSecret)) {
+                sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
+                        "🚫 Access Denied! Please log in to continue. 🌟", request.getRequestURI());
+                return false;
+            }
             return true;
         }
 

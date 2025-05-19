@@ -1,5 +1,6 @@
 package com.corianna.app_service.entity;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 import org.hibernate.annotations.OnDelete;
@@ -24,7 +25,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Chatbot {
+public class Chatbot implements Serializable {
 
     @Id
     @Column(name = "chatbot_id", nullable = false, unique = true)
