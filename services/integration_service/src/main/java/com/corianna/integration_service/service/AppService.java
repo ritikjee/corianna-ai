@@ -35,7 +35,7 @@ public class AppService {
 
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        String url = appServiceUrl + "/api/internal-service/member?userId=" + userId + "&appId=" + appId;
+        String url = appServiceUrl + "/api/internal-services/member?userId=" + userId + "&appId=" + appId;
 
         try {
 
@@ -54,6 +54,7 @@ public class AppService {
 
             return null;
         } catch (Exception e) {
+            e.printStackTrace();
             return null;
         }
 

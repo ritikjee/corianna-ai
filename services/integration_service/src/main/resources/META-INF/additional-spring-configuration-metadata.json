@@ -28,7 +28,27 @@
     {
       "name": "slack.client-secret",
       "type": "java.lang.String",
-      "description": "A description for 'slack.client-secret'"
+      "description": "The client secret for the Slack integration"
+    },
+    {
+      "name": "client.url",
+      "type": "java.lang.String",
+      "description": "The URL of the client application"
+    },
+    {
+      "name": "slack.redirect-uri",
+      "type": "java.lang.String",
+      "description": "The redirect URI for the Slack integration"
+    },
+    {
+      "name": "discord.client-id",
+      "type": "java.lang.String",
+      "description": "The client ID for the Discord integration"
+    },
+    {
+      "name": "discord.redirect-uri",
+      "type": "java.lang.String",
+      "description": "The redirect URI for the Discord integration"
     }
   ]
 }

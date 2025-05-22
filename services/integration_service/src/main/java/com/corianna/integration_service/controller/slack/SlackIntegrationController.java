@@ -15,6 +15,8 @@ import com.corianna.integration_service.service.SlackService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +36,9 @@ public class SlackIntegrationController {
 
         @Value("${secrets.jwt-secret}")
         private String jwtSecret;
+
+        @Value("{${slack.redirect-uri}}")
+        private String slackRedirectUri;
 
         private final JwtConfig jwtConfig;
         private final AppService appService;
@@ -69,8 +74,9 @@ public class SlackIntegrationController {
                                         "appId", appId));
 
                         String redirectUrl = String.format(
-                                        "https://slack.com/oauth/v2/authorize?client_id=%s&scope=chat:write&scope=chat:write,channels:read,groups:read,mpim:read,im:read&user_scope=chat:write,channels:read,groups:read,mpim:read,im:read&state=%s&redirect_uri=https%%3A%%2F%%2Flocalhost%%3A3000%%2Fapi%%2Fauth%%2Fcallback%%2Fslack",
-                                        slackClientId, state);
+                                        "https://slack.com/oauth/v2/authorize?client_id=%s&scope=app_mentions:read,channels:manage,channels:join,chat:write.public,chat:write,groups:history,groups:read,links:write,groups:write,incoming-webhook,users.profile:read,users:read.email,users:read&state=%s&redirect_uri=%s",
+                                        slackClientId, state,
+                                        URLEncoder.encode(slackRedirectUri, StandardCharsets.UTF_8));
 
                         return ResponseEntity.ok().body(
                                         new DataResponse<IntegrationRedirectURI>(
