@@ -1,0 +1,54 @@
+{
+  "properties": [
+    {
+      "name": "app-service.url",
+      "type": "java.lang.String",
+      "description": "The URL of the app service"
+    },
+    {
+      "name": "secrets.x-app-secret",
+      "type": "java.lang.String",
+      "description": "The secret key for the interprocess communication"
+    },
+    {
+      "name": "auth-service.url",
+      "type": "java.lang.String",
+      "description": "The URL of the auth service"
+    },
+    {
+      "name": "secrets.jwt-secret",
+      "type": "java.lang.String",
+      "description": "The secret key for the JWT token"
+    },
+    {
+      "name": "slack.client-id",
+      "type": "java.lang.String",
+      "description": "The client ID for the Slack integration"
+    },
+    {
+      "name": "slack.client-secret",
+      "type": "java.lang.String",
+      "description": "The client secret for the Slack integration"
+    },
+    {
+      "name": "client.url",
+      "type": "java.lang.String",
+      "description": "The URL of the client application"
+    },
+    {
+      "name": "slack.redirect-uri",
+      "type": "java.lang.String",
+      "description": "The redirect URI for the Slack integration"
+    },
+    {
+      "name": "discord.client-id",
+      "type": "java.lang.String",
+      "description": "The client ID for the Discord integration"
+    },
+    {
+      "name": "discord.redirect-uri",
+      "type": "java.lang.String",
+      "description": "The redirect URI for the Discord integration"
+    }
+  ]
+}

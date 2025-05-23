@@ -3,7 +3,6 @@ import { ChromaDB } from './services/chromadb'
 import { googleGenAI } from './services/gemini'
 import { KafkaComnsumer } from './services/kafka/consumer'
 import { KafkaProducer } from './services/kafka/producer'
-import { RedisClient } from './services/redis'
 import { CHROMA_DB_METADATA } from './types'
 import { formatWebsiteContent } from './utils/helper'
 import { logger } from './utils/logger'
@@ -24,30 +23,20 @@ async function main() {
 
     const kafkaConsumer = new KafkaComnsumer(
         [KAFKA_CLIENT_BROKER],
-        'chat-questions'
+        'chat-questions-embeddings'
     )
 
     const chatAnswerProducer = new KafkaProducer(
         [KAFKA_PRODUCER_BROKER],
-        'chat-answers'
+        'response-worker'
     )
-
-    const webhookWorkerProducer = new KafkaProducer(
-        [KAFKA_PRODUCER_BROKER],
-        'webhook-worker'
-    )
-
-    const redisClient = new RedisClient(REDIS_CONNECTION_URI)
 
     const chromaClient = new ChromaDB()
 
     await Promise.all([
         kafkaConsumer.connect(),
         chatAnswerProducer.init(),
-        webhookWorkerProducer.init(),
         chatAnswerProducer.connect(),
-        webhookWorkerProducer.connect(),
-        redisClient.connect(),
         chromaClient.init(),
     ])
 
@@ -59,6 +48,13 @@ async function main() {
             partition,
             topic,
         } = payload
+
+        logger.info('Received message from Kafka', {
+            value,
+            offset,
+            partition,
+            topic,
+        })
 
         kafkaConsumer.commitOffsets([
             {
@@ -74,89 +70,86 @@ async function main() {
 
         const data = JSON.parse(value.toString())
 
-        console.log('Received data:', data)
+        try {
+            const { embedding } = data
 
-        const { embeddings } = await googleGenAI.models.embedContent({
-            model: 'text-embedding-004',
-            contents: [data.question],
-        })
+            if (!embedding || !embedding.values) {
+                logger.error('No embeddings found')
+                return
+            }
 
-        if (!embeddings || !embeddings[0]) {
-            logger.error('No embeddings found')
-            return
-        }
+            const query = embedding?.values
 
-        const query = embeddings[0].values
+            if (!query) {
+                logger.error('No query found')
+                return
+            }
 
-        if (!query) {
-            logger.error('No query found')
-            return
-        }
+            const results = await chromaClient.query(query, 5, data.appId)
 
-        const results = await chromaClient.query(query, 5, data.appId)
-
-        const { candidates, usageMetadata } =
-            await googleGenAI.models.generateContent({
-                model: 'gemini-1.5-flash-8b',
-                contents: [
-                    `You are a helpful assistant. Answer the question based on the following content:\n\n${formatWebsiteContent(results.metadatas as CHROMA_DB_METADATA[][])}\n\nQuestion: ${data.question}\nAnswer:`,
-                ],
-                config: {
-                    systemInstruction: {
-                        role: 'system',
-                        text: 'You are a helpful assistant. Answer the question based on the following content and give detailed answer explaining each point. Note try to be polite and friendly.Use emojis where possible.',
+            const { candidates, usageMetadata } =
+                await googleGenAI.models.generateContent({
+                    model: 'gemini-1.5-flash-8b',
+                    contents: [
+                        `You are a helpful assistant. Answer the question based on the following content:\n\n${formatWebsiteContent(results.metadatas as CHROMA_DB_METADATA[][])}\n\nQuestion: ${data.question}\nAnswer:`,
+                    ],
+                    config: {
+                        systemInstruction: {
+                            role: 'system',
+                            text: 'You are a helpful assistant. Answer the question based on the following content and give detailed answer explaining each point. Note try to be polite and friendly.Use emojis where possible.',
+                        },
                     },
-                },
-            })
+                })
 
-        const answer: {
-            answer: string
-            status: string
-        } = {
-            answer: '',
-            status: 'error',
-        }
+            const answer: {
+                answer: string
+                status: string
+            } = {
+                answer: '',
+                status: 'error',
+            }
 
-        if (candidates?.[0]?.content?.parts?.[0]?.text) {
-            answer.answer = candidates[0].content.parts[0].text
-            answer.status = 'success'
-        } else {
-            answer.answer =
-                'Sorry, I could not find an answer to your question.'
-            answer.status = 'error'
-        }
+            if (candidates?.[0]?.content?.parts?.[0]?.text) {
+                answer.answer = candidates[0].content.parts[0].text
+                answer.status = 'success'
+            } else {
+                answer.answer =
+                    'Sorry, I could not find an answer to your question.'
+                answer.status = 'error'
+            }
 
-        const messageId = uuid()
+            const messageId = uuid()
 
-        redisClient.set(
-            `answer:${data.requestId}`,
-            JSON.stringify({
-                answer,
-                messageId,
-                question: data.question,
-                requestId: data.requestId,
-                appId: data.appId,
-            })
-        )
-
-        chatAnswerProducer.sendMessage(
-            JSON.stringify({
-                data: {
-                    answer: JSON.stringify(answer.answer),
+            const payloadToSend = {
+                response: {
+                    answer: answer.answer,
+                    status: answer.status,
+                    question: data.question,
+                    requestId: data.requestId,
+                    appId: data.appId,
                     messageId,
-                    ...data,
                 },
                 usageMetadata,
-            })
-        )
+                metadata: {
+                    ...data.metadata,
+                },
+            }
 
-        webhookWorkerProducer.sendMessage(
-            JSON.stringify({
-                ...data,
-                answer: JSON.stringify(answer.answer),
-                messageId,
+            logger.info('Sending answer to Kafka', {
+                payload: payloadToSend,
             })
-        )
+
+            await chatAnswerProducer.sendMessage(JSON.stringify(payloadToSend))
+
+            logger.info('Answer sent to Kafka', {
+                payload: payloadToSend,
+            })
+        } catch (error) {
+            logger.error('Error processing message', {
+                error,
+                data,
+            })
+        }
     })
 }
 

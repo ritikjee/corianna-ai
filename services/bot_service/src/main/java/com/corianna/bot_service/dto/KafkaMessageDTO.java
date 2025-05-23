@@ -1,5 +1,7 @@
 package com.corianna.bot_service.dto;
 
+import java.util.Map;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,5 +17,6 @@ public class KafkaMessageDTO {
     private String appId;
     private String chatId;
     private String question;
+    private Map<String, String> metadata;
 
 }

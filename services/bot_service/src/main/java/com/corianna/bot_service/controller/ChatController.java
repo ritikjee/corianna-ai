@@ -1,5 +1,6 @@
 package com.corianna.bot_service.controller;
 
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.data.redis.core.RedisTemplate;
@@ -86,7 +87,7 @@ public class ChatController {
                     requestId,
                     chatbot.getApp().getId(),
                     data.getChatId(),
-                    data.getQuestion()));
+                    data.getQuestion(), Map.of("type", "chat")));
 
             return ResponseEntity.ok().body(
                     new ApiResponse<>(200,

@@ -2,6 +2,9 @@ services:
   rabbitmq:
     container_name: rabbitmq_container
     image: rabbitmq:4.0-management
+    profiles:
+      - dev
+      - prod
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -12,6 +15,9 @@ services:
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     container_name: zookeeper_container
+    profiles:
+      - dev
+      - prod
     ports:
       - "2181:2181"
     environment:
@@ -26,6 +32,9 @@ services:
   kafka:
     image: confluentinc/cp-kafka:latest
     container_name: kafka_container
+    profiles:
+      - dev
+      - prod
     depends_on:
       - zookeeper
     ports:
@@ -45,6 +54,9 @@ services:
   chromadb:
     image: chromadb/chroma
     container_name: chromadb_container
+    profiles:
+      - dev
+      - prod
     volumes:
       - chroma_data:/data
     ports:
@@ -56,6 +68,9 @@ services:
   postgres:
     container_name: postgres_container
     image: postgres
+    profiles:
+      - dev
+      - prod
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -72,6 +87,8 @@ services:
   pgadmin:
     container_name: pgadmin_container
     image: dpage/pgadmin4
+    profiles:
+      - dev
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
@@ -88,6 +105,9 @@ services:
 
   redis:
     container_name: redis_container
+    profiles:
+      - dev
+      - prod
     image: redis
     ports:
       - "6379:6379"
@@ -97,6 +117,8 @@ services:
 
   redis_insights:
     container_name: redis_insights_container
+    profiles:
+      - dev
     image: redis/redisinsight
     ports:
       - "5540:5540"
@@ -105,33 +127,38 @@ services:
     restart: unless-stopped
 
   mongo:
+    image: mongo
     container_name: mongodb_container
-    image: mongo:latest
+    profiles:
+      - dev
+      - prod
     ports:
       - "27017:27017"
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=password
     volumes:
       - mongo_data:/data/db
     networks:
       - corianna_network
     restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
 
   mongo-express:
+    image: mongo-express
     container_name: mongo_express_container
-    image: mongo-express:latest
+    profiles:
+      - dev
     ports:
-      - "8081:8081"
-    environment:
-      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
-      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
-      - ME_CONFIG_MONGODB_SERVER=mongodb_container
-      - ME_CONFIG_MONGODB_AUTH_DATABASE=admin
-    depends_on:
-      - mongo
+      - "5055:8081"
     networks:
       - corianna_network
+    depends_on:
+      - mongo
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+      ME_CONFIG_BASICAUTH: false
     restart: unless-stopped
 
 networks:

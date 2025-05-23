@@ -1,0 +1,45 @@
+{
+    "name": "response_service",
+    "version": "1.0.0",
+    "description": "This will serve as response service for sending response to different platform when needed",
+    "keywords": [
+        "MERN",
+        "Springboot",
+        "kafka",
+        "Microservice"
+    ],
+    "homepage": "https://github.com/ritikjee/corianna-ai#readme",
+    "bugs": {
+        "url": "https://github.com/ritikjee/corianna-ai/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ritikjee/corianna-ai.git"
+    },
+    "license": "ISC",
+    "author": "https://github.com/ritikjee",
+    "type": "commonjs",
+    "main": "dist/app.js",
+    "scripts": {
+        "dev": "npx nodemon",
+        "build": "npx tsc",
+        "start": "node dist/app.js"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.26.0",
+        "eslint": "^9.26.0",
+        "nodemon": "^3.1.10",
+        "prettier": "^3.5.3",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.8.3",
+        "typescript-eslint": "^8.32.0"
+    },
+    "dependencies": {
+        "date-fns": "^4.1.0",
+        "dotenv": "^16.5.0",
+        "kafkajs": "^2.2.4",
+        "redis": "^5.0.1",
+        "uuid": "^11.1.0",
+        "winston": "^3.17.0"
+    }
+}
