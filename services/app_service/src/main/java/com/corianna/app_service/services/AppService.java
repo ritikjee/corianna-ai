@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import com.corianna.app_service.entity.App;
@@ -50,7 +51,8 @@ public class AppService {
 
         membersRepository.save(member);
 
-        ScrapeWebsiteMessage message = new ScrapeWebsiteMessage(websiteUrl, "full", newApp.getId(), Map.of());
+        ScrapeWebsiteMessage message = new ScrapeWebsiteMessage(websiteUrl, "full", newApp.getId(),
+                Map.of("firstTime", "true"));
 
         messageProducer.sendMessage(message);
 
@@ -69,10 +71,18 @@ public class AppService {
 
     }
 
-    @CacheEvict(value = "apps", key = "#userId")
+    @Caching(evict = {
+            @CacheEvict(value = "apps", key = "#userId"),
+            @CacheEvict(value = "app", key = "#appId")
+    })
     public void deleteApp(String appId, String userId) {
         membersRepository.deleteAppIfMemberIsOwner(appId, userId);
         appRepository.deleteById(appId);
+    }
+
+    @Cacheable(value = "app", key = "#appId")
+    public App getApp(String appId) {
+        return appRepository.findById(appId).orElse(null);
     }
 
 }

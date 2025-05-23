@@ -64,7 +64,7 @@ export class ChromaDB {
                 return
             }
 
-            await this.collection.add({
+            await this.collection.upsert({
                 ids,
                 embeddings: documents,
                 metadatas,

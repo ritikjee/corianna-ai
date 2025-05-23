@@ -2,17 +2,18 @@ import 'dotenv/config'
 
 import pLimit from 'p-limit'
 
-import { Kafka } from './services/kafka'
-import { ProcessData } from './services/process'
-import { RabbitMQ } from './services/rabbitmq'
-import { Scapper } from './services/scapper'
-import { logger } from './utils/logger'
-import { RedisClient } from './services/redis'
 import {
     GEMINI_TEXT_EMBEDDING_004_RATE_LIMIT_PER_MINUTE,
     REDIS_RATE_LIMIT_KEY,
 } from './constants'
+import { Kafka } from './services/kafka'
+import { ProcessData } from './services/process'
+import { RabbitMQ } from './services/rabbitmq'
+import { RedisClient } from './services/redis'
+import { Scapper } from './services/scapper'
+import { groupUrlsByPath } from './utils/common'
 import { startRateLimitRefresher } from './utils/helper'
+import { logger } from './utils/logger'
 
 async function main() {
     const rabbitMQUrl = process.env.RABBITMQ_URL as string
@@ -84,7 +85,7 @@ async function main() {
             if (mode == 'pattern') {
                 const patternUrls = await Scapper.crawlAllInternalLinks(url)
                 urls = patternUrls.filter((patternUrl) => {
-                    return patternUrl.includes(metadata)
+                    return patternUrl.includes(url.split('*')[1])
                 })
             }
 
@@ -96,16 +97,19 @@ async function main() {
 
             await Promise.all(tasks)
 
-            if (mode == 'pattern') {
-                const message = {
-                    urls: urls,
-                    websiteId: appId,
-                    metadata: metadata,
-                }
+            if (metadata?.ingest) {
+                const groupedUrls = groupUrlsByPath(urls)
+                kafka.sendMessage(
+                    'ingested-url',
+                    JSON.stringify({ appId, urls: groupedUrls, metadata })
+                )
+            }
 
-                await kafka.sendMessage(
-                    'ingestion_api_response',
-                    JSON.stringify(message)
+            if (metadata?.firstTime) {
+                const groupedUrls = groupUrlsByPath(urls)
+                kafka.sendMessage(
+                    'first-time-url',
+                    JSON.stringify({ appId, urls: groupedUrls })
                 )
             }
 

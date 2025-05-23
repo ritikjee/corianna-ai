@@ -53,3 +53,23 @@ export type WEBHOOK_MESSAGE = {
         data: any
     }
 }
+
+export type GroupedUrls = {
+    group: string
+    urls: string[]
+}
+
+export type INGESTION_MESSAGE = {
+    appId: string
+    urls: GroupedUrls[]
+    metadata: {
+        ingest: boolean
+        ingestedBy: string
+        ingestionMedium: string
+    }
+}
+
+export type FIRST_TIME_MESSAGE = {
+    appId: string
+    urls: GroupedUrls[]
+}
