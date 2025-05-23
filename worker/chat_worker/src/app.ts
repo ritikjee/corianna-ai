@@ -47,77 +47,82 @@ async function main() {
 
     logger.info('Connected to Kafka and Redis')
 
-    startRateLimitRefresher(
-        redisClient,
-        REDIS_RATE_LIMIT_KEY,
-        GEMINI_TEXT_EMBEDDING_004_RATE_LIMIT_PER_MINUTE,
-        60_000
-    )
+    try {
+        startRateLimitRefresher(
+            redisClient,
+            REDIS_RATE_LIMIT_KEY,
+            GEMINI_TEXT_EMBEDDING_004_RATE_LIMIT_PER_MINUTE,
+            60_000
+        )
 
-    kafkaConsumer.subscribe(async (payload) => {
-        const rateLimit = await redisClient.get(REDIS_RATE_LIMIT_KEY)
+        kafkaConsumer.subscribe(async (payload) => {
+            const rateLimit = await redisClient.get(REDIS_RATE_LIMIT_KEY)
 
-        if (!rateLimit) {
-            logger.error('Rate limit not set in Redis')
-            return
-        }
+            if (!rateLimit) {
+                logger.error('Rate limit not set in Redis')
+                return
+            }
 
-        const rateLimitValue = parseInt(rateLimit, 10)
+            const rateLimitValue = parseInt(rateLimit, 10)
 
-        if (rateLimitValue <= 0) {
-            logger.error('Rate limit exceeded')
-            return
-        }
+            if (rateLimitValue <= 0) {
+                logger.error('Rate limit exceeded')
+                return
+            }
 
-        const {
-            message: { value, offset },
-            partition,
-            topic,
-        } = payload
-
-        kafkaConsumer.commitOffsets([
-            {
-                topic,
+            const {
+                message: { value, offset },
                 partition,
-                offset: (parseInt(offset, 10) + 1).toString(),
-            },
-        ])
+                topic,
+            } = payload
 
-        if (!value) {
-            return
-        }
+            kafkaConsumer.commitOffsets([
+                {
+                    topic,
+                    partition,
+                    offset: (parseInt(offset, 10) + 1).toString(),
+                },
+            ])
 
-        const { requestId, appId, chatId, question } = JSON.parse(
-            value.toString()
-        )
+            if (!value) {
+                return
+            }
 
-        if (!requestId || !appId || !chatId || !question) {
-            return
-        }
+            const { requestId, appId, chatId, question, metadata } = JSON.parse(
+                value.toString()
+            )
 
-        const { embeddings } = await googleGenAI.models.embedContent({
-            contents: question,
-            model: 'text-embedding-004',
-        })
+            if (!requestId || !appId || !chatId || !question) {
+                return
+            }
 
-        if (!embeddings || embeddings.length === 0) {
-            logger.error('No embeddings found')
-            return
-        }
-        const embedding = embeddings[0]
-
-        kafkaProducer.sendMessage(
-            JSON.stringify({
-                requestId,
-                appId,
-                chatId,
-                question,
-                embedding,
+            const { embeddings } = await googleGenAI.models.embedContent({
+                contents: question,
+                model: 'text-embedding-004',
             })
-        )
 
-        await redisClient.decr(REDIS_RATE_LIMIT_KEY)
-    })
+            if (!embeddings || embeddings.length === 0) {
+                logger.error('No embeddings found')
+                return
+            }
+            const embedding = embeddings[0]
+
+            kafkaProducer.sendMessage(
+                JSON.stringify({
+                    requestId,
+                    appId,
+                    chatId,
+                    question,
+                    embedding,
+                    metadata,
+                })
+            )
+
+            await redisClient.decr(REDIS_RATE_LIMIT_KEY)
+        })
+    } catch (error) {
+        logger.error('Error in main function', error)
+    }
 }
 
 main()
