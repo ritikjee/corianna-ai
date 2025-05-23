@@ -53,6 +53,9 @@ public class AuthInterceptor implements HandlerInterceptor {
 
             if (userId != null && !userId.isEmpty()) {
                 request.setAttribute("userId", userId);
+                request.setAttribute("email", request.getHeader("email"));
+                request.setAttribute("firstname", request.getHeader("firstname"));
+                request.setAttribute("lastname", request.getHeader("lastname"));
                 return true;
             }
 
@@ -78,6 +81,9 @@ public class AuthInterceptor implements HandlerInterceptor {
 
             if (user != null) {
                 request.setAttribute("userId", user.getId());
+                request.setAttribute("email", user.getEmail());
+                request.setAttribute("firstname", user.getFirstname());
+                request.setAttribute("lastname", user.getLastname());
                 return true;
             }
 

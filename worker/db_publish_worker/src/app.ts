@@ -1,11 +1,19 @@
 import 'dotenv/config'
 
+import AppUrls from './models/app-urls'
 import Chat from './models/chat'
+import IngestionResponse from './models/ingestion-response'
 import Webhook from './models/webhook'
 import { ChromaDB } from './services/chromadb'
 import { KafkaClient } from './services/kafka'
 import { MongoDB } from './services/mongodb'
-import { CHAT_ANSWER_RESPONSE, KAFKA_MESSAGE, WEBHOOK_MESSAGE } from './types'
+import {
+    CHAT_ANSWER_RESPONSE,
+    FIRST_TIME_MESSAGE,
+    INGESTION_MESSAGE,
+    KAFKA_MESSAGE,
+    WEBHOOK_MESSAGE,
+} from './types'
 import { createFlushScheduler } from './utils/flush-scheduler'
 import { logger } from './utils/logger'
 
@@ -29,7 +37,13 @@ async function main() {
     logger.info('Connected to Kafka, MongoDB and ChromaDB')
 
     await client.subscribe(
-        ['web-scrapper-embeddings', 'chat-answers', 'webhook-responses'],
+        [
+            'web-scrapper-embeddings',
+            'chat-answers',
+            'webhook-responses',
+            'first-time-url',
+            'ingested-url',
+        ],
         async (payload) => {
             const {
                 message: { value },
@@ -137,6 +151,62 @@ async function main() {
                         scheduler.add(parsed)
                     } catch (err) {
                         logger.error('Error message:', err)
+                    }
+                    break
+                }
+                case 'first-time-url': {
+                    try {
+                        const parsed = JSON.parse(value.toString())
+
+                        const scheduler =
+                            createFlushScheduler<FIRST_TIME_MESSAGE>(
+                                async (batch) => {
+                                    await AppUrls.insertMany(
+                                        batch.map((item) => ({
+                                            appId: item.appId,
+                                            urls: item.urls,
+                                        }))
+                                    )
+                                    logger.info(
+                                        `Flushed ${batch.length} messages to MongoDB`
+                                    )
+                                },
+                                30_000,
+                                100
+                            )
+                        scheduler.add(parsed)
+                    } catch (error) {
+                        logger.error('Error message:', error)
+                    }
+                    break
+                }
+                case 'ingested-url': {
+                    try {
+                        const parsed = JSON.parse(value.toString())
+
+                        const scheduler =
+                            createFlushScheduler<INGESTION_MESSAGE>(
+                                async (batch) => {
+                                    await IngestionResponse.insertMany(
+                                        batch.map((item) => ({
+                                            appId: item.appId,
+                                            urls: item.urls,
+                                            ingestedBy:
+                                                item.metadata.ingestedBy,
+                                            ingestionMedium:
+                                                item.metadata.ingestionMedium,
+                                        }))
+                                    )
+                                    logger.info(
+                                        `Flushed ${batch.length} messages to MongoDB`
+                                    )
+                                },
+                                30_000,
+                                100
+                            )
+                        scheduler.add(parsed)
+                    } catch (error) {
+                        logger.error('Error message:', error)
                     }
                     break
                 }
