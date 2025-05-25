@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.corianna</groupId>
 	<artifactId>auth_service</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0-RELEASE</version>
 	<name>auth_service</name>
 	<description>Authentication Service for Corianna AI</description>
 	<url/>

@@ -1,0 +1,45 @@
+# Ignore all .git files
+.gitignore
+.gitattributes
+
+# Ignore mvn wrapper files
+mvnw
+mvnw.cmd
+
+# Ignore the target directory
+target/
+
+# Ignore the .mvn directory
+.mvn/
+
+# Ignore the Dockerfile
+Dockerfile
+
+# Ignore the Docker Compose file
+docker-compose.yaml
+docker-compose.yml
+
+# Ignore the .idea directory
+.idea/
+
+# Ignore the .vscode directory
+.vscode/
+
+# Ignore the .classpath file
+.classpath
+
+# Ignore the .project file
+.project
+
+# Ignore the .settings directory
+.settings/
+
+# Ignore the .DS_Store file (macOS)
+.DS_Store
+
+# Ignore the .env file
+.env
+
+# Ignore default properties files
+application.properties
+application-dev.properties
