@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.corianna</groupId>
 	<artifactId>app_service</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0-RELEASE</version>
 	<name>app_service</name>
 	<description>App Service for corianna ai providing dashboard analytics, chats, model training options, etc.</description>
 	<url/>

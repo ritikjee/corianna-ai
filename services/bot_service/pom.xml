@@ -9,8 +9,8 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.corianna</groupId>
-	<artifactId>bot-service</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<artifactId>bot_service</artifactId>
+	<version>1.0.0-RELEASE</version>
 	<name>bot-service</name>
 	<description>Bot Service for Corianna AI</description>
 	<url/>
